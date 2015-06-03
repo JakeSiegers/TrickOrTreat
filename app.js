@@ -100,7 +100,7 @@ slack.on('message', function(message) {
 
 	console.log(message.type);
 
-	if (message.type === 'message'){
+	if (message.type === 'message' && (message.text != null) && (channel != null)){
 
 		if(message.text.indexOf("!trickortreat") == 0 || message.text.indexOf("!trt") == 0 || message.text.indexOf("!tot") == 0){
 			trickortreat(channel,user);
