@@ -1,0 +1,24 @@
+{
+  "name": "trickortreat",
+  "version": "1.0.0",
+  "description": "A Node-powered Slack chat bot that gives you candies!",
+  "main": "app.js",
+  "dependencies": {
+    "mongoose": "^4.0.4",
+    "slack-client": "^1.4.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JakeSiegers/TrickOrTreat.git"
+  },
+  "author": "Jake Siegers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JakeSiegers/TrickOrTreat/issues"
+  },
+  "homepage": "https://github.com/JakeSiegers/TrickOrTreat#readme"
+}
