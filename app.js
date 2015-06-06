@@ -1,7 +1,8 @@
 var Slack = require('slack-client');
 var fs = require('fs')
-var token = fs.readFileSync('tokenfile').toString();
-var slack = new Slack(token, true, true);
+var config = require('./config');
+var slack = new Slack(config.token, true, true);
+var TOTController = require('./controller');
 slack.login();
 
 var players = {};
