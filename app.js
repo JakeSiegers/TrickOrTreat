@@ -5,6 +5,7 @@ var slack = new Slack(config.token, true, true);
 var TOTController = require('./controller');
 slack.login();
 
+/*
 var players = {};
 
 var candies = new Array(
@@ -59,6 +60,7 @@ var nonCandies = new Array(
 	,"Dental Floss"
 	,"Toothpicks"
 );
+*/
 
 slack.on('open', function () {
 	var channels = Object.keys(slack.channels)
@@ -99,10 +101,42 @@ slack.on('message', function(message) {
 	var user = slack.getUserByID(message.user);
 	//ßconsole.log(user);
 
-	console.log(message.type);
+	//console.log(message.type);
 
 	if (message.type === 'message' && (message.text != null) && (channel != null)){
 
+		var msgArray = TOTController.parseMessage(message.text);
+		//channel.send(msgArray[0]);
+		switch(msgArray[0]){
+			case '!debug':
+				if(user.name !== 'sirtopeia'){ return false; }
+				var paramStr = "";
+				for(var i = 1;i<msgArray.length;i++){
+					paramStr += msgArray[i]+"\n";
+				}
+				if(paramStr !== ""){
+					channel.send("These are the parameters I saw:\n"+paramStr);
+				}
+				break;
+			case '!loadcandy':
+				if(user.name !== 'sirtopeia'){ channel.send("Only @sirtopeia can add candy!"); return false; }
+				channel.send("Loading candy into database....done!");
+				break;
+			case '!give':
+				if(msgArray.length != 4){
+					channel.send("Wrong number of parameters! (!give {number} {candy} {player})");
+					return false;
+				}
+				if(!isNaN(parseFloat(msgArray[1])) && isFinite(msgArray[1])){
+					channel.send("Giving "+msgArray[1]+" "+msgArray[2]+" to @"+msgArray[3]);
+				}else{
+					channel.send("Candy Count must be numeric");
+					return false;
+				}
+				break;
+
+		}
+		/*
 		if(message.text.indexOf("!trickortreat") == 0 || message.text.indexOf("!trt") == 0 || message.text.indexOf("!tot") == 0){
 			trickortreat(channel,user);
 		}
@@ -114,29 +148,6 @@ slack.on('message', function(message) {
 				channel.send("You havn't started playing yet!");
 			}
 		}
+		*/
 	}
 });
-
-
-function trickortreat(channel,user){
-	if(players[user.id] == null){
-		channel.send("Hello "+user.name+", Lets's play! You start with 0 candies!")
-		players[user.id] = 0;
-	}
-
-	var selection = Math.floor(Math.random()*1000)+1;
-	if(selection>950){
-		channel.send(user.name+", you found a "+nonCandies[Math.floor(Math.random()*nonCandies.length)]+"... You still have "+players[user.id]+" candies.")
-		return;
-	}
-
-	candiesFound = 1;
-	var candiesFoundChance = Math.floor(Math.random()*100)+1;
-	if(candiesFoundChance<15){
-		candiesFound = 2;
-	}else if(candiesFoundChance<3){
-		candiesFound = 3;
-	}
-	players[user.id] += candiesFound;
-	channel.send(user.name+", you found "+candiesFound+" "+candies[Math.floor(Math.random()*candies.length)]+"! You now have "+players[user.id]+" candies!")
-}

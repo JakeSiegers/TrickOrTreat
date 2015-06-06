@@ -2,9 +2,9 @@ function TOTModel(){
 	this.config = require('./config');
 	this.mysql = require('mysql');
 	this.dbc = this.mysql.createConnection({
-		host:config.mysqlHost,
-		user:config.mysqlUser,
-		password:config.mysqlPass
+		host:this.config.mysqlHost,
+		user:this.config.mysqlUser,
+		password:this.config.mysqlPass
 	});
 }
 
