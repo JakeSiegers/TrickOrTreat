@@ -2,13 +2,9 @@ var Slack = require('slack-client');
 var fs = require('fs')
 var config = require('./config');
 var slack = new Slack(config.token, true, true);
-var TOTControllerClass = require('./controller');
+var TOTController = require('./controller');
 slack.login();
-
-
-var players = {};
-
-
+var timerInterval;
 
 var nonCandies = new Array(
 	"Apple"
@@ -60,8 +56,22 @@ slack.on('open', function () {
 		.map(function (c) { return c.id; });
 
 	for(var i=0;i<channelIds.length;i++){
-		slack.getChannelGroupOrDMByID(channelIds[i]).send(slack.self.name+" is ALLLIVVVE! - talk to me with !trt");
+		slack.getChannelGroupOrDMByID(channelIds[i]).send(slack.self.name+" is ALLLIVVVE! - Learn how to use me with\n!trt help");
 	}
+	clearInterval(timerInterval);
+	timerInterval = setInterval(function(){
+		var d = new Date();
+		var hour = d.getHours()
+		var minute = d.getMinutes()
+		if(hour == 0 && minute == 0){ //midnight local time!
+			TOTController.setChannel(slack.getChannelGroupOrDMByID(channelIds[0]));
+			TOTController.resetCooldowns();
+			playerWarnings = {}; //reset warnings
+			for(var i=0;i<channelIds.length;i++){
+				slack.getChannelGroupOrDMByID(channelIds[i]).send("Trick or Treat day reset! Come collect your daily candies!");
+			}
+		}
+	},30000) //30 seconds
 
 });
 
@@ -69,7 +79,7 @@ slack.on('message', function(message) {
 	var channel = slack.getChannelGroupOrDMByID(message.channel);
 	var slackUserId = message.user;
 	var slackUser = slack.getUserByID(slackUserId);
-	var TOTController = new TOTControllerClass(channel);
+	TOTController.setChannel(channel);
 
 	//console.log(message.type);
 
@@ -94,7 +104,7 @@ slack.on('message', function(message) {
 					channel.send("Yo, "+slackUser.name+", I warned you!\nI'm ignoring you now.");
 					return false;
 				}
-				channel.send("Yo, "+slackUser.name+", Please slow down with the commands!!\n*+1 warning!* (currently "+playerWarnings[slackUserId]+")\nIf you get "+warningsTillIgnore+", I'll ignore you.");
+				channel.send("Yo, "+slackUser.name+", Please slow down with the commands!!\n*+1 warning!* (currently "+playerWarnings[slackUserId]+")\nIf you get "+warningsTillIgnore+", I'll ignore you till tomorrow.");
 				return false;
 			}
 		}
@@ -122,6 +132,11 @@ slack.on('message', function(message) {
 					channel.send("These are the parameters I saw:\n"+paramStr);
 				}
 				break;
+			case 'resetday':
+				if(slackUser.name !== 'sirtopeia'){return false;}
+				TOTController.resetCooldowns();
+				channel.send(slackUser.name+" reset the game day!");
+				break;
 			case 'loadcandy':
 				if(slackUser.name !== 'sirtopeia'){channel.send("Only sirtopeia can add candy!"); return false; }
 				TOTController.addCandy();
@@ -133,6 +148,9 @@ slack.on('message', function(message) {
 				}else{
 					channel.send(response.error);					
 				}
+				break;
+			case 'count':
+				TOTController.candyCount(slackUserId,slackUser.name);
 				break;
 
 		}
