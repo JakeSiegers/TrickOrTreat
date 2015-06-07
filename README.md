@@ -2,5 +2,5 @@
 A NodeJS-powered Slack chat bot that hands out candy!
 ##Quick Start
  - npm install
- - create a file called "tokenfile" in root directory of the project. Put your Slack auth token in there. You can use a bot token, or your own user token if you'd like. If you use your own user token, messages from this bot will use your account to post them.
+ - Copy the contents of config.TEMPLATE and create a file called config.js in the root directory of your project. Fill out missing variables with your Slack API token and your database infomation.
  - node app.js
