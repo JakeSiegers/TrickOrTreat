@@ -5,7 +5,7 @@ var slack = new Slack(config.token, true, true);
 var TOTController = require('./controller');
 slack.login();
 
-/*
+
 var players = {};
 
 var candies = new Array(
@@ -60,7 +60,17 @@ var nonCandies = new Array(
 	,"Dental Floss"
 	,"Toothpicks"
 );
-*/
+
+var help = {
+	'give':'!trt give {number} {candy} {player}'
+}
+
+//The following objects will be for storing players times. This will be checked first instead of the database to reduce stress it.
+playerLastCommandCache = {};
+playerLastTRTCache = {};
+//If we show the player x amount of warnings, maybe we ban them! (perhaps 10?)
+playerWarnings = {};
+warningsTillIgnore = 5;
 
 slack.on('open', function () {
 	var channels = Object.keys(slack.channels)
@@ -106,9 +116,42 @@ slack.on('message', function(message) {
 	if (message.type === 'message' && (message.text != null) && (channel != null)){
 
 		var msgArray = TOTController.parseMessage(message.text);
+		if(msgArray[0] !== '!trt'){return false;}
+
+		if(playerWarnings[message.user] != null && playerWarnings[message.user] >= warningsTillIgnore){return false;}
+
+		//check if they are sending too many commands
+		if(playerLastCommandCache[message.user] != null){
+			playerLastCommandCache[message.user] = new Date();
+		}else{
+			//less than 3 seconds between commands? send a warning.
+			if(new Date().getTime() / 1000 - playerLastCommandCache[message.user] < 3){
+				if(playerWarnings[message.user] == null){
+					playerWarnings[message.user] = 1;
+				}else{
+					playerWarnings[message.user] += 1;
+				}
+				channel.send("Yo, "user.name+", Please slow down with the commands!\n*+1 warning!* (currently "+playerWarnings[message.user]+")\nIf you get "+warningsTillIgnore+", I'll ignore you.");
+				return false;
+			}
+		}
+		//update when they last sent a command.
+		playerLastCommandCache[message.user] = new Date();
+		
 		//channel.send(msgArray[0]);
-		switch(msgArray[0]){
-			case '!debug':
+		switch(msgArray[1]){
+			case null:
+				var response = TOTController.trickortreat(message.user);
+				if(response.success){
+					//channel.send();
+				}else{
+					channel.send(response.error);
+				}
+				break;
+			case 'help':
+				//if(msgArray[2])
+				break;
+			case 'debug':
 				if(user.name !== 'sirtopeia'){ return false; }
 				var paramStr = "";
 				for(var i = 1;i<msgArray.length;i++){
@@ -118,20 +161,16 @@ slack.on('message', function(message) {
 					channel.send("These are the parameters I saw:\n"+paramStr);
 				}
 				break;
-			case '!loadcandy':
+			case 'loadcandy':
 				if(user.name !== 'sirtopeia'){ channel.send("Only @sirtopeia can add candy!"); return false; }
 				channel.send("Loading candy into database....done!");
 				break;
-			case '!give':
-				if(msgArray.length != 4){
-					channel.send("Wrong number of parameters! (!give {number} {candy} {player})");
-					return false;
-				}
-				if(!isNaN(parseFloat(msgArray[1])) && isFinite(msgArray[1])){
-					channel.send("Giving "+msgArray[1]+" "+msgArray[2]+" to @"+msgArray[3]);
+			case 'give':
+				var response = TOTController.give(msgArray[2],msgArray[3],msgArray[4])
+				if(response.success){
+
 				}else{
-					channel.send("Candy Count must be numeric");
-					return false;
+					channel.send(response.error);					
 				}
 				break;
 
