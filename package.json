@@ -1,10 +1,10 @@
 {
   "name": "trickortreat",
   "version": "1.0.0",
-  "description": "A Node-powered Slack chat bot that gives you candies!",
+  "description": "A NodeJs powered Slack bot that gives out candy!",
   "main": "app.js",
   "dependencies": {
-    "mongoose": "^4.0.4",
+    "mysql": "^2.7.0",
     "slack-client": "^1.4.1"
   },
   "devDependencies": {},

@@ -2,54 +2,13 @@ var Slack = require('slack-client');
 var fs = require('fs')
 var config = require('./config');
 var slack = new Slack(config.token, true, true);
-var TOTController = require('./controller');
+var TOTControllerClass = require('./controller');
 slack.login();
 
 
 var players = {};
 
-var candies = new Array(
-	"Hershey's Kiss"
-	,"M&Ms"
-	,"Snickers"
-	,"Twizzlers"
-	,"Reese's Peanut Butter Cup"
-	,"Kit-Kat Bar"
-	,"Gummi Worms"
-	,"Gummi Bears"
-	,"Butterfinger"
-	,"Twix"
-	,"Hershey Bar"
-	,"Jelly Beans"
-	,"Candy Corn"
-	,"Three Musketeers"
-	,"Tootsie Roll"
-	,"Skittles"
-	,"Milky Way"
-	,"Starburst"
-	,"Sour Patch Kids"
-	,"Almond Joy "
-	,"Pixie Stix"
-	,"Smarties"
-	,"Blow Pop"
-	,"Jolly Rancher"
-	,"Red Vines"
-	,"Jawbreaker"
-	,"Pocky"
-	,"Pop Rocks"
-	,"Caramel Square"
-	,"Whoppers"
-	,"Gum Drops"
-	,"Butterscotch"
-	,"Candy Cane"
-	,"Life Savers"
-	,"Pez"
-	,"Sweethearts"
-	,"Warhead"
-	,"Now and Later"
-	,"Tootsie Roll Pop"
-	,"Chocolate Truffle"
-);
+
 
 var nonCandies = new Array(
 	"Apple"
@@ -108,53 +67,55 @@ slack.on('open', function () {
 
 slack.on('message', function(message) {
 	var channel = slack.getChannelGroupOrDMByID(message.channel);
-	var user = slack.getUserByID(message.user);
-	//ßconsole.log(user);
+	var slackUserId = message.user;
+	var slackUser = slack.getUserByID(slackUserId);
+	var TOTController = new TOTControllerClass(channel);
 
 	//console.log(message.type);
 
 	if (message.type === 'message' && (message.text != null) && (channel != null)){
-
 		var msgArray = TOTController.parseMessage(message.text);
 		if(msgArray[0] !== '!trt'){return false;}
 
-		if(playerWarnings[message.user] != null && playerWarnings[message.user] >= warningsTillIgnore){return false;}
+		if(playerWarnings[slackUserId] != null && playerWarnings[slackUserId] >= warningsTillIgnore){return false;}
 
 		//check if they are sending too many commands
-		if(playerLastCommandCache[message.user] != null){
-			playerLastCommandCache[message.user] = new Date();
+		if(playerLastCommandCache[slackUserId] == null){
+			playerLastCommandCache[slackUserId] = new Date();
 		}else{
 			//less than 3 seconds between commands? send a warning.
-			if(new Date().getTime() / 1000 - playerLastCommandCache[message.user] < 3){
-				if(playerWarnings[message.user] == null){
-					playerWarnings[message.user] = 1;
+			if(new Date() - playerLastCommandCache[slackUserId] < 3000){ //less than 3 seconds.
+				if(playerWarnings[slackUserId] == null){
+					playerWarnings[slackUserId] = 1;
 				}else{
-					playerWarnings[message.user] += 1;
+					playerWarnings[slackUserId] += 1;
 				}
-				channel.send("Yo, "user.name+", Please slow down with the commands!\n*+1 warning!* (currently "+playerWarnings[message.user]+")\nIf you get "+warningsTillIgnore+", I'll ignore you.");
+				if(playerWarnings[slackUserId] == warningsTillIgnore){
+					channel.send("Yo, "+slackUser.name+", I warned you!\nI'm ignoring you now.");
+					return false;
+				}
+				channel.send("Yo, "+slackUser.name+", Please slow down with the commands!!\n*+1 warning!* (currently "+playerWarnings[slackUserId]+")\nIf you get "+warningsTillIgnore+", I'll ignore you.");
 				return false;
 			}
 		}
+
 		//update when they last sent a command.
-		playerLastCommandCache[message.user] = new Date();
-		
-		//channel.send(msgArray[0]);
+		playerLastCommandCache[slackUserId] = new Date();
+
 		switch(msgArray[1]){
-			case null:
-				var response = TOTController.trickortreat(message.user);
-				if(response.success){
-					//channel.send();
-				}else{
-					channel.send(response.error);
-				}
+			case undefined: //play the game
+				TOTController.trickortreat(slackUserId,slackUser.name);
+				break;
+			case 'register':
+				TOTController.register(slackUserId,slackUser.name);
 				break;
 			case 'help':
 				//if(msgArray[2])
 				break;
 			case 'debug':
-				if(user.name !== 'sirtopeia'){ return false; }
+				if(slackUser.name !== 'sirtopeia'){ return false; }
 				var paramStr = "";
-				for(var i = 1;i<msgArray.length;i++){
+				for(var i = 2;i<msgArray.length;i++){
 					paramStr += msgArray[i]+"\n";
 				}
 				if(paramStr !== ""){
@@ -162,11 +123,11 @@ slack.on('message', function(message) {
 				}
 				break;
 			case 'loadcandy':
-				if(user.name !== 'sirtopeia'){ channel.send("Only @sirtopeia can add candy!"); return false; }
-				channel.send("Loading candy into database....done!");
+				if(slackUser.name !== 'sirtopeia'){channel.send("Only sirtopeia can add candy!"); return false; }
+				TOTController.addCandy();
 				break;
 			case 'give':
-				var response = TOTController.give(msgArray[2],msgArray[3],msgArray[4])
+				var response = TOTController.giveCandy(msgArray[2],msgArray[3],msgArray[4])
 				if(response.success){
 
 				}else{
@@ -181,8 +142,8 @@ slack.on('message', function(message) {
 		}
 
 		if(message.text.indexOf("!candytotal") == 0 || message.text.indexOf("!ct") == 0){
-			if(players[message.user] != null){
-				channel.send(user.name+", you have "+players[message.user]+" candies!");
+			if(players[slackUserId] != null){
+				channel.send(slackUser.name+", you have "+players[slackUserId]+" candies!");
 			}else{
 				channel.send("You havn't started playing yet!");
 			}
