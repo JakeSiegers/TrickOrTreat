@@ -1,0 +1,9 @@
+var config = {
+	token:''
+	,mysqlHost:''
+	,mysqlPort:3306
+	,mysqlUser:''
+	,mysqlPass:''
+	,mysqlDatabase:'trickortreat'
+}
+module.exports = config;

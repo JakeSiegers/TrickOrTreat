@@ -60,7 +60,7 @@ slack.on('open', function () {
 		.map(function (c) { return c.id; });
 
 	for(var i=0;i<channelIds.length;i++){
-		//slack.getChannelGroupOrDMByID(channelIds[i]).send("Trick or Treet has been started!");
+		slack.getChannelGroupOrDMByID(channelIds[i]).send(slack.self.name+" is ALLLIVVVE! - talk to me with !trt");
 	}
 
 });

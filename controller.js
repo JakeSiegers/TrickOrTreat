@@ -84,7 +84,7 @@ TOTController.prototype.addCandy = function(){
 		var c ={candyName:candies[i],candyIcon:candies[i].toLowerCase().replace("/ /g","").replace("/-/g","").replace("/'/g",""),nonCandy:false};
 		_this.dbc.query('INSERT INTO candies SET ?',c,function(error,results,fields){
 			if(error){_this.fatalError(error);}
-			_this.channel.send("+1 Candy Added!");
+			//_this.channel.send("+1 Candy Added!");
 		});
 	}
 	
@@ -100,12 +100,12 @@ TOTController.prototype.register = function(slackUserId,slackName){
 		if(results.length > 0){
 			_this.channel.send(slackName+", You're already registered!");
 		}
-		//else{
+		else{
 			_this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW()',[slackUserId,slackName],function(error,results,fields){
 				if(error){_this.fatalError(error);}
 				_this.channel.send("Hello "+slackName+"! You've been registered!");
 			});
-		//}
+		}
 	});
 	
 }
