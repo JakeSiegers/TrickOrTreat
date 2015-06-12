@@ -23,7 +23,7 @@ function TOTController(){
 TOTController.prototype.fatalError = function(error){
 	console.log("===============\n=====ERROR=====\n===============\n"+error.message);
 	//dbc.query('INSERT INTO ',[],function)
-	_this.channel.send("ERROR! ERROR! - I'M CRASHING! - CHECK LOGS! - *COUGH*");
+	_this.channel.send("FATAL ERROR!\nTrick Or Treat is going offline for now\nping @"+this.config.userToPingOnCrash);
 	throw new Error("Error Occured: "+error.message);
 }
 
@@ -123,7 +123,11 @@ TOTController.prototype.addCandy = function(){
 
 TOTController.prototype.parseMessage = function(message){
 	//very basic, doesnt count for escaped characters - just basic quoting.
-	return message.match(/'[^']*'|"[^"]*"|\S+/g) || [];
+	var params = message.match(/'[^']*'|"[^"]*"|\S+/g) || [];
+	for(var i=0;i<params.length;i++){
+		params[i] = params[i].replace(/"/g, "");
+	}
+	return params;
 }
 
 TOTController.prototype.register = function(slackUserId,slackName){
@@ -144,8 +148,6 @@ TOTController.prototype.register = function(slackUserId,slackName){
 
 TOTController.prototype.trickortreat = function(slackUserId,slackName){
 	//return {success:false,error:"Can't Trick or Treat yet!"};
-	
-	console.log()
 
 	_this.dbc.query('SELECT playerId,playerName,lastPlayed,numPlayedToday FROM players WHERE playerId = ?',[slackUserId],function(error,results,fields){
 		if(error != null){_this.fatalError(error);}
@@ -160,10 +162,10 @@ TOTController.prototype.trickortreat = function(slackUserId,slackName){
 		}
 
 		var amount = 1;
-		if(Math.floor(Math.random()*50) == 0){
+		if(Math.floor(Math.random()*25) == 0){
 			amount = 2;
 		}
-		if(Math.floor(Math.random()*100) == 0){
+		if(Math.floor(Math.random()*50) == 0){
 			amount = 3;
 		}
 		//amount=10
@@ -181,9 +183,9 @@ TOTController.prototype.trickortreat = function(slackUserId,slackName){
 				candyStr += (i>0?'*AND* ':'')+'one '+candiesFound[i].candyIcon+' '+candiesFound[i].candyName+"\n"
 			}
 			if(candiesFound.length >= 3){
-				_this.channel.send("Overflowing Bucket! Jackpot! A house has some extra, so you get "+candiesFound.length+" candies! \n"+slackName+" you recieved "+candyStr);
+				_this.channel.send("Overflowing Bucket! Jackpot! A house has some extra, so you get "+candiesFound.length+" candies! \n"+slackName+" you received "+candyStr);
 			}else{
-				_this.channel.send(slackName+", you recieved "+candyStr);
+				_this.channel.send(slackName+", you received "+candyStr);
 			}
 			numPlayedToday++;
 			//update play count!
@@ -273,7 +275,7 @@ TOTController.prototype.candyCount = function(slackUserId,slackName){
 		}
 		var s=", You have:\n";
 		for(var i=0;i<results.length;i++){
-			s+=results[i].amount+" "+results[i].candyIcon+" "+results[i].candyName+(results[i].amount>1?'s':'')+"\n"
+			s+=(results[i].amount>=1000?'*a boatload of*':results[i].amount)+" "+results[i].candyIcon+" "+results[i].candyName+"\n"
 		}
 		_this.channel.send(slackName+s);
 	});

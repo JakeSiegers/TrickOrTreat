@@ -5,6 +5,7 @@ var slack = new Slack(config.token, true, true);
 var TOTController = require('./controller');
 slack.login();
 var timerInterval;
+var math = require('mathjs');
 
 var nonCandies = new Array(
 	"Apple"
@@ -17,8 +18,27 @@ var nonCandies = new Array(
 );
 
 var help = {
-	'give':'!trt give {number} {candy} {player}'
-}
+	'!trt':{
+		short:"You go trick or treating"
+		,long:"You go trick or treating (Assuming you're registered) - this allows you to earn up to three pieces of candy, twice a day."
+	}
+	,'!trt register':{
+		short:"Registers your account in order to start playing the game"
+		,long:"Registers your account in order to start playing the game"
+	}
+	,'!trt count':{
+		short:"Shows your current candy counts"
+		,long:"Shows your current candy counts"
+	}
+	/*,'!trt give':{
+		short:"Usage: !trt give {number} {candy} {player}"
+		,long:"Usage: !trt give {number} {candy} {player} \n Use this to donate some of your candy to another player - not to be confused with !trt trade"
+	}*/
+	,'!trt help':{
+		short:"Shows this block of text"
+		,long:"Shows this block of text"
+	}
+}	
 
 //The following objects will be for storing players times. This will be checked first instead of the database to reduce stress it.
 playerLastCommandCache = {};
@@ -56,7 +76,7 @@ slack.on('open', function () {
 		.map(function (c) { return c.id; });
 
 	for(var i=0;i<channelIds.length;i++){
-		slack.getChannelGroupOrDMByID(channelIds[i]).send(slack.self.name+" is ALLLIVVVE! - Learn how to use me with\n!trt help");
+		slack.getChannelGroupOrDMByID(channelIds[i]).send(slack.self.name+" is now online");
 	}
 	clearInterval(timerInterval);
 	timerInterval = setInterval(function(){
@@ -71,7 +91,7 @@ slack.on('open', function () {
 				slack.getChannelGroupOrDMByID(channelIds[i]).send("Trick or Treat day reset! Come collect your daily candies!");
 			}
 		}
-	},30000) //30 seconds
+	},60000) //60 seconds
 
 });
 
@@ -101,11 +121,11 @@ slack.on('message', function(message) {
 					playerWarnings[slackUserId] += 1;
 				}
 				if(playerWarnings[slackUserId] == warningsTillIgnore){
-					channel.send("Yo, "+slackUser.name+", I warned you!\nI'm ignoring you now.");
+					channel.send(slackUser.name+", I warned you!\nI'm ignoring you now.");
 					return false;
 				}
-				channel.send("Yo, "+slackUser.name+", Please slow down with the commands!!\n*+1 warning!* (currently "+playerWarnings[slackUserId]+")\nIf you get "+warningsTillIgnore+", I'll ignore you till tomorrow.");
-				return false;
+				channel.send(slackUser.name+", Please slow down with the commands!!\n*+1 warning!* (currently "+playerWarnings[slackUserId]+")\nIf you get "+warningsTillIgnore+", I'll ignore you till tomorrow.");
+				//return false;
 			}
 		}
 
@@ -121,6 +141,11 @@ slack.on('message', function(message) {
 				break;
 			case 'help':
 				//if(msgArray[2])
+				var helpStr = "";
+				for(var topic in help){
+					helpStr+="*"+topic+"*: "+help[topic].short+"\n";
+				}
+				channel.send(helpStr);
 				break;
 			case 'debug':
 				if(slackUser.name !== 'sirtopeia'){ return false; }
@@ -133,7 +158,7 @@ slack.on('message', function(message) {
 				}
 				break;
 			case 'resetday':
-				if(slackUser.name !== 'sirtopeia'){return false;}
+				if(slackUser.name !== 'sirtopeia' && slackUser.name !== 'void'){return false;}
 				TOTController.resetCooldowns();
 				channel.send(slackUser.name+" reset the game day!");
 				break;
@@ -149,8 +174,19 @@ slack.on('message', function(message) {
 					channel.send(response.error);					
 				}
 				break;
+			case 'solve':
+				//if(slackUser.name !== 'sirtopeia'){return false;}
+				try{
+					channel.send(""+math.eval(msgArray[2]));
+				}catch(e){
+					channel.send("Failed to solve!");
+				}
+				break;
 			case 'count':
 				TOTController.candyCount(slackUserId,slackUser.name);
+				break;
+			default:
+				channel.send("Unknown command (try using !trt help)");
 				break;
 
 		}
