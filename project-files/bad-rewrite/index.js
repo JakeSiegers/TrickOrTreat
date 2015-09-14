@@ -1,0 +1,1 @@
+var TrickOrTreat = require('./TrickOrTreat');
