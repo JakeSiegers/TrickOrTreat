@@ -4,6 +4,8 @@ function TOTController(){
 	_this = this;
 	this.config = require('./config');
 	this.mysql = require('mysql');
+	this.Q  = require('q');
+	this.Q.longStackSupport = true;
 	this.dbc = this.mysql.createConnection({
 		host:this.config.mysqlHost
 		,port:this.config.mysqlPort
@@ -168,7 +170,7 @@ TOTController.prototype.trickortreat = function(slackUserId,slackName){
 		if(Math.floor(Math.random()*50) == 0){
 			amount = 3;
 		}
-		//amount=10
+		
 		_this.dbc.query('SELECT candyId,candyName,candyIcon FROM candies ORDER BY RAND() LIMIT ?',[amount],function(error,results,fields){
 			if(error){_this.fatalError(error);}
 			//_this.channel.send("You're registered! {This is where i'd give you some candy from the database...}");
@@ -242,28 +244,6 @@ TOTController.prototype.trickortreat = function(slackUserId,slackName){
 		//console.log(fields);
 	});
 
-	
-	/*
-	if(players[user.id] == null){
-		players[user.id] = 0;
-		return "Hello "+user.name+", Lets's play! You start with 0 candies!";
-	}
-
-	var selection = Math.floor(Math.random()*1000)+1;
-	if(selection>950){
-		return user.name+", you found a "+nonCandies[Math.floor(Math.random()*nonCandies.length)]+"... You still have "+players[user.id]+" candies.";
-	}
-
-	candiesFound = 1;
-	var candiesFoundChance = Math.floor(Math.random()*100)+1;
-	if(candiesFoundChance<15){
-		candiesFound = 2;
-	}else if(candiesFoundChance<3){
-		candiesFound = 3;
-	}
-	players[user.id] += candiesFound;
-	return user.name+", you found "+candiesFound+" "+candies[Math.floor(Math.random()*candies.length)]+"! You now have "+players[user.id]+" candies!")
-	*/
 }
 
 TOTController.prototype.candyCount = function(slackUserId,slackName){
