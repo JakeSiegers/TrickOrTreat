@@ -234,7 +234,7 @@ TrickOrTreat.prototype.error = function(error){
 TrickOrTreat.prototype.addHumor = function(msg){
 	var edited = msg;
 	if(chance.bool({likelihood: 10})){
-		edited = msg+" "+chance.pick(treatStrings.bleepsAndBloopsEnd);	
+		edited = edited+" "+chance.pick(treatStrings.bleepsAndBloopsEnd);	
 	}
 
 	if(chance.bool({likelihood: 10})){
