@@ -2,7 +2,8 @@ var Slack = require('slack-client');
 //var fs = require('fs');
 var math = require('mathjs');
 var chalk = require('chalk');
-var TrickDatabase = require('./database.js');
+var TreatDatabase = require('./TreatDatabase.js');
+var TreatController = require('./TreatDatabase.js');
 var Chance = require('chance');
 var chance = new Chance();
 var TreatStrings = require('./strings.js');
@@ -11,10 +12,10 @@ var treatStrings = new TreatStrings();
 function TrickOrTreat(){
 	this.config = require('./config');
 	this.slackObj = new Slack(this.config.token, true, true);
-	this.trickDatabase = new TrickDatabase(this);
+	this.treatDatabase = new TreatDatabase(this);
 
 	this.log('info','Connecting to MySQL ... ');
-	this.trickDatabase.initDatabaseConnection(this.databaseConnected.bind(this));
+	this.treatDatabase.initDatabaseConnection(this.databaseConnected.bind(this));
 	
 }
 
@@ -81,7 +82,7 @@ TrickOrTreat.prototype.processMessage = function(message){
 			}
 			break;
 		case 'register':
-			this.trickDatabase.register(msgUserObj,this.registerResponse.bind(this,msgChannel));
+			this.treatDatabase.register(msgUserObj,this.registerResponse.bind(this,msgChannel));
 			break;
 		case 'help':
 			//if(msgArray[2])

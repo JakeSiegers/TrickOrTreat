@@ -20,10 +20,7 @@ TreatDatabase.prototype.initDatabaseConnectionConnected = function(callback,erro
 // ================= REGISTER USER ============================================================
 
 TreatDatabase.prototype.register = function(userObj,callback){
-	this.dbc.query('SELECT playerId,playerName,lastPlayed FROM players WHERE playerId = ?',
-		[userObj.id],
-		this.registerCheckUserExists.bind(this,userObj,callback)
-	);
+	this.getUserById(userObj.id,this.registerCheckUserExists.bind(this,userObj,callback))
 };
 
 TreatDatabase.prototype.registerCheckUserExists = function(userObj,callback,error,results,fields){
@@ -45,5 +42,20 @@ TreatDatabase.prototype.registerFinish = function(userObj,callback,error,results
 };
 
 // ==========================================================================================
+
+
+// ===========================
+// ACTUAL QUERY FUNCTIONS
+// ===========================
+TreatDatabase.prototype.getUserById = function(id,callback){
+	this.dbc.query('SELECT playerId,playerName,lastPlayed FROM players WHERE playerId = ?',[id],callback);
+}
+
+TreatDatabase.prototype.insertPlayer = function(id,callback){
+	this.dbc.query('SELECT playerId,playerName,lastPlayed FROM players WHERE playerId = ?',
+		[id],
+		callback()
+	);
+}
 
 module.exports = TreatDatabase;

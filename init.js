@@ -1,2 +1,2 @@
-var TrickOrTreat = require('./TrickOrTreat.js');
+var TrickOrTreat = require('./src/TrickOrTreat.js');
 new TrickOrTreat();
