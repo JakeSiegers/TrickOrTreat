@@ -35,6 +35,20 @@ function TreatStrings(){
 		"All Systems [online]"
 	];
 
+
+	this.randomSolveMessages = [
+		"Ah, yes - I know this one!",
+		"Uhm, my sensors say ",
+		"That's an easy one, it's",
+		"Pfft, easy! That's",
+		"Computed your answer to be",
+		"I believe the answer is",
+		"Your answer is",
+		"That's",
+		"Duh, it's",
+		"Did you even try? It's",
+	];
+
 	
 	this.help = {
 		'!trt':{
@@ -49,14 +63,19 @@ function TreatStrings(){
 			short:"Shows your current candy counts",
 			long:"Shows your current candy counts"
 		},
-		'!trt give':{
-			short:"Usage: !trt give {number} {candy} {player}",
-			long:"Usage: !trt give {number} {candy} {player} \n Use this to donate some of your candy to another player - not to be confused with !trt trade"
-		},
+		//'!trt give':{
+		//	short:"Usage: !trt give {number} {candy} {player}",
+		//	long:"Usage: !trt give {number} {candy} {player} \n Use this to donate some of your candy to another player - not to be confused with !trt trade"
+		//},
 		'!trt help':{
 			short:"Shows this block of text",
 			long:"Shows this block of text"
+		},
+		'!trt solve':{
+			short:"Solve math problems!",
+			long:"Solve math problems!"
 		}
+
 	};
 
 	this.bleepsAndBloopsEnd = [
@@ -77,6 +96,17 @@ function TreatStrings(){
 		"*Boop! Beep!*",
 		"*Ding!*"
 	];
+
+	this.okay = [
+		"Okay!",
+		"Whatever you say, boss",
+		"Okdoke",
+		"Right away!",
+		"Cha-char-charmander!",
+		"Sure thing bro",
+		"Ok!",
+	];
+
 }
 	
 module.exports = TreatStrings;

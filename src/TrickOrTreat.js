@@ -2,21 +2,28 @@ var Slack = require('slack-client');
 //var fs = require('fs');
 var math = require('mathjs');
 var chalk = require('chalk');
+var TreatController = require('./TreatController.js');
 var TreatDatabase = require('./TreatDatabase.js');
-var TreatController = require('./TreatDatabase.js');
-var Chance = require('chance');
-var chance = new Chance();
+var ChanceJS = require('chance');
+var chance = new ChanceJS();
 var TreatStrings = require('./strings.js');
 var treatStrings = new TreatStrings();
 
 function TrickOrTreat(){
 	this.config = require('./config');
 	this.slackObj = new Slack(this.config.token, true, true);
-	this.treatDatabase = new TreatDatabase(this);
+	this.database = new TreatDatabase(this);
+	this.controller = new TreatController(this);
+
+	this.botface = {
+		defaultName: this.config.botName,
+		currentName: this.config.botName,
+		defaultImage: this.config.botImage,
+		currentImage: this.config.botImage
+	}
 
 	this.log('info','Connecting to MySQL ... ');
-	this.treatDatabase.initDatabaseConnection(this.databaseConnected.bind(this));
-	
+	this.database.initDatabaseConnection(this.databaseConnected.bind(this));
 }
 
 TrickOrTreat.prototype.databaseConnected = function(){
@@ -38,7 +45,18 @@ TrickOrTreat.prototype.slackConnectionOpened = function(){
 	//this.sendMessageToSuperAdmins("Hello SuperAdmins!");	
 	//this.sendMessageToAdmins("Hello Admins!");
 	this.sendMsgToAllChannels(chance.pick(treatStrings.randomIntroMessages));
+
+	timerInterval = setInterval(this.checkIfWeNeedToResetDay.bind(this),60000);
 };
+
+TrickOrTreat.prototype.checkIfWeNeedToResetDay = function(){
+	var d = new Date();
+	var hour = d.getHours()
+	var minute = d.getMinutes()
+	if(hour == 0 && minute == 0){ //midnight local time!
+		this.database.resetCooldowns(this.resetCooldownsResponse.bind(this,"Hey all, It's midnight, so I just"));
+	}
+}
 
 TrickOrTreat.prototype.processMessage = function(message){
 	var msgChannel = this.slackObj.getChannelGroupOrDMByID(message.channel);
@@ -70,27 +88,40 @@ TrickOrTreat.prototype.processMessage = function(message){
 		return false;
 	}
 
+	//Maybe send a random message to response to people. We're alive, right?
+	if(chance.bool({likelihood: 5})){
+
+
+
+		
+	}
+
 	var msgArray = this.parseMessage(message.text);
 	if(msgArray[0] !== '!trt'){return false;}
 
 	switch(msgArray[1]){
 		case undefined: //play the game
 			if(inMainChannels){
-				this.sendMessageToChannel(msgChannel,msgUserObj.name+" went trick or treating");
+				this.controller.goTrickOrTreating(msgUserObj,this.trtResponse.bind(this,msgChannel));
+				//this.sendMessageToChannel(msgChannel,msgUserObj.name+" went trick or treating");
 			}else{
 				this.sendMessageToUser(msgUserObj.id,"I will not take you trick or treating in private.\nPlease use one of the following channels: #"+this.getCurrentChannelNames().join(" or #"));	
 			}
 			break;
 		case 'register':
-			this.treatDatabase.register(msgUserObj,this.registerResponse.bind(this,msgChannel));
+			this.controller.register(msgUserObj,this.registerResponse.bind(this,msgChannel));
 			break;
 		case 'help':
 			//if(msgArray[2])
-			var helpStr = "";
+			var help = [];
 			for(var topic in treatStrings.help){
-				helpStr+="["+topic+"] "+treatStrings.help[topic].short+"\n";
+				help.push({
+					"title":topic,
+					"value":treatStrings.help[topic].short,
+					"short":false
+				});
 			}
-			this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.helpHeader)+" (Be sure to click 'Show more...')",[{"color": "#36a64f",text:"\n"+helpStr}]);
+			this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.helpHeader),[{"color": "#36a64f",fields:help}]);
 			break;
 		case 'debug':
 			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
@@ -105,12 +136,24 @@ TrickOrTreat.prototype.processMessage = function(message){
 				this.sendMessageToChannel(msgChannel,"These are the parameters I saw:\n"+paramStr);
 			}
 			break;
-		/*
+		
 		case 'resetday':
-			if(slackUser.name !== 'sirtopeia' && slackUser.name !== 'void'){return false;}
-			TOTController.resetCooldowns();
-			channel.send(slackUser.name+" reset the game day!");
+			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
+				this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				return false;
+			}
+			this.database.resetCooldowns(this.resetCooldownsResponse.bind(this,msgUserObj.name));
 			break;
+		case 'setimage':
+			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
+				this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				return false;
+			}
+			this.botface.currentImage = msgArray[2];
+			this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.okay));
+			break;
+
+		/*
 		case 'give':
 			var response = TOTController.giveCandy(msgArray[2],msgArray[3],msgArray[4]);
 			if(response.success){
@@ -118,19 +161,19 @@ TrickOrTreat.prototype.processMessage = function(message){
 			}else{
 				channel.send(response.error);					
 			}
-			break;
+			break
+		*/
 		case 'solve':
-			//if(slackUser.name !== 'sirtopeia'){return false;}
 			try{
-				channel.send(""+math.eval(msgArray[2]));
+				this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.randomSolveMessages),[{color:"#FF0000",text:math.eval(msgArray[2])}]);
 			}catch(e){
-				channel.send("Failed to solve!");
+				this.sendMessageToChannel(msgChannel,"Failed to solve!");
 			}
 			break;
 		case 'count':
-			TOTController.candyCount(slackUserId,slackUser.name);
+			this.controller.generateCandyCountAttachment(msgUserObj,this.countResponce.bind(this,msgChannel));
 			break;
-		*/
+		
 		default:
 			this.sendMessageToChannel(msgChannel,"Unknown command (try using !trt help)");
 			break;
@@ -140,8 +183,21 @@ TrickOrTreat.prototype.processMessage = function(message){
 };
 
 TrickOrTreat.prototype.registerResponse = function(channel,msg){
-	channel.send(msg);
+	this.sendMessageToChannel(channel,msg);
 };
+
+TrickOrTreat.prototype.trtResponse = function(channel,msg){
+	this.sendMessageToChannel(channel,msg);
+};
+
+TrickOrTreat.prototype.countResponce = function(channel,msg,attachment){
+	this.sendMessageToChannel(channel,msg,attachment);
+}
+TrickOrTreat.prototype.resetCooldownsResponse = function(name,error,results,fields){
+	if(error !== null){ this.error(error); return;}
+	this.sendMsgToAllChannels(name+" reset the game day!");
+}
+
 
 TrickOrTreat.prototype.parseMessage = function(message){
 	var params = message.match(/'[^']*'|"[^"]*"|\S+/g) || [];
@@ -150,6 +206,10 @@ TrickOrTreat.prototype.parseMessage = function(message){
 	}
 	return params;
 };
+
+
+
+// ==== SENDING MESSAGES =====
 
 TrickOrTreat.prototype.sendMessageToAdmins = function(msg){
 	for(var i=0;i<this.config.admins.length;i++){
@@ -174,7 +234,7 @@ TrickOrTreat.prototype.sendMessageToSuperAdmins = function(msg){
 };
 
 TrickOrTreat.prototype.sendMessageToChannel = function(channel,message,attachments){
-	channel.postMessage({as_user:true,text:this.addHumor(message),attachments:attachments});
+	channel.postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:false,text:this.addHumor(message),attachments:attachments});
 };
 
 TrickOrTreat.prototype.sendMessageToUser = function(userId,message,attachments){
@@ -182,16 +242,18 @@ TrickOrTreat.prototype.sendMessageToUser = function(userId,message,attachments){
 };
 
 TrickOrTreat.prototype.sendMessageToUserConnected = function(message,attachments,dm){
-	this.slackObj.getChannelGroupOrDMByID(dm.channel.id).postMessage({as_user:true,text:this.addHumor(message),attachments:attachments});
+	this.slackObj.getChannelGroupOrDMByID(dm.channel.id).postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:false,text:this.addHumor(message),attachments:attachments});
 
 };
 
-TrickOrTreat.prototype.sendMsgToAllChannels = function(msg){
+TrickOrTreat.prototype.sendMsgToAllChannels = function(msg,attachments){
 	var channelIds =  Object.keys(this.getCurrentChannels());
 	for(var i=0;i<channelIds.length;i++){
-		this.slackObj.getChannelGroupOrDMByID(channelIds[i]).send(this.addHumor(msg));	
+		this.sendMessageToChannel(this.slackObj.getChannelGroupOrDMByID(channelIds[i]),msg,attachments);
 	}
 };
+
+// === GETTING CHANNEL INFO
 
 TrickOrTreat.prototype.getCurrentChannelNames = function(){
 	var currentChannels = this.getCurrentChannels();
@@ -215,21 +277,22 @@ TrickOrTreat.prototype.getCurrentChannels = function(){
 	return channels;
 };
 
+// === ERRORS & LOGS & WHATNOT
+
 TrickOrTreat.prototype.slackObjError = function(error){
 	this.log('error',error.msg);
-	process.exit(1);
+	setTimeout(function(){process.exit(1);},1000);
 };
 
 TrickOrTreat.prototype.error = function(error){
 	this.log('error',error);
 	if(this.slackObj.connected){
-		this.sendMsgToAllChannels("An error has occured and I need to restart, please stand by!\n\n(PING @"+this.config.admins.join(" & @")+")");
-		//No async here!
-		//this.sendMessageToSuperAdmins("Hey, I crashed on this error: "+error,true);	
+		this.sendMsgToAllChannels("An error has occured and I need to restart, please stand by!\n\n(I just sent crash logs to  @"+this.config.superadmins.join(" & @")+")");
+		this.sendMessageToSuperAdmins("Hey, I crashed on this error: "+error);	
 	}else{
 		this.log('error',"I cannot send out error messages without a slack connection!");
 	}
-	process.exit(1);
+	setTimeout(function(){process.exit(1);},1000);
 };
 
 TrickOrTreat.prototype.addHumor = function(msg){
