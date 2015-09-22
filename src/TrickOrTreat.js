@@ -40,7 +40,7 @@ TrickOrTreat.prototype.slackConnectionOpened = function(){
 
 	this.log('info',"I'm logged into the following channels:\n---------\n"+this.getCurrentChannelNames().join("\n")+"\n---------");
 	this.slackObj.on('message', this.processMessage.bind(this));
-	this.slackObj.on('error', this.slackObjError.bind(this));
+	this.slackObj.on('error', this.error.bind(this));
 
 	//this.sendMessageToSuperAdmins("Hello SuperAdmins!");	
 	//this.sendMessageToAdmins("Hello Admins!");
@@ -49,12 +49,30 @@ TrickOrTreat.prototype.slackConnectionOpened = function(){
 	timerInterval = setInterval(this.checkIfWeNeedToResetDay.bind(this),60000);
 };
 
+TrickOrTreat.prototype.timeTillDayReset = function(){
+	var date = new Date();
+	var hour = date.getHours();
+	var minutes = date.getMinutes();
+	var hoursLeft = 24-hour;
+	var minutesLeft = 60-minutes;
+	return {
+		hours:hoursLeft,
+		hoursStr: hoursLeft+" hour"+(hoursLeft>1?"s":""),
+		minutes : minutesLeft,
+		minutesStr : minutesLeft+" minute"+(minutesLeft>1?"s":"")
+	};
+}
+
 TrickOrTreat.prototype.checkIfWeNeedToResetDay = function(){
 	var d = new Date();
 	var hour = d.getHours()
 	var minute = d.getMinutes()
 	if(hour == 0 && minute == 0){ //midnight local time!
 		this.database.resetCooldowns(this.resetCooldownsResponse.bind(this,"Hey all, It's midnight, so I just"));
+	}
+	if(hour == 6 && minute == 0){
+		var timeTillReset = this.timeTillDayReset();
+		this.sendMsgToAllChannels("@here "+chance.pick(treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+", "+timeTillReset.minutesStr+")");
 	}
 }
 
@@ -152,8 +170,6 @@ TrickOrTreat.prototype.processMessage = function(message){
 			this.botface.currentImage = msgArray[2];
 			this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.okay));
 			break;
-
-		/*
 		case 'give':
 			var response = TOTController.giveCandy(msgArray[2],msgArray[3],msgArray[4]);
 			if(response.success){
@@ -233,8 +249,15 @@ TrickOrTreat.prototype.sendMessageToSuperAdmins = function(msg){
 	}
 };
 
+//This function is not async
+//you lose the ability to post attachments and for custom names and images
+//But you can call this function on exit or something and not have to wait for it to actually send the message
+TrickOrTreat.prototype.sendMessageToChannelSYNC = function(channel,message){
+	channel.send(this.addHumor(message));
+};
+
 TrickOrTreat.prototype.sendMessageToChannel = function(channel,message,attachments){
-	channel.postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:false,text:this.addHumor(message),attachments:attachments});
+	channel.postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:true,text:this.addHumor(message),attachments:attachments});
 };
 
 TrickOrTreat.prototype.sendMessageToUser = function(userId,message,attachments){
@@ -242,8 +265,15 @@ TrickOrTreat.prototype.sendMessageToUser = function(userId,message,attachments){
 };
 
 TrickOrTreat.prototype.sendMessageToUserConnected = function(message,attachments,dm){
-	this.slackObj.getChannelGroupOrDMByID(dm.channel.id).postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:false,text:this.addHumor(message),attachments:attachments});
+	this.slackObj.getChannelGroupOrDMByID(dm.channel.id).postMessage({username:this.botface.currentName,icon_url:this.botface.currentImage,as_user:true,text:this.addHumor(message),attachments:attachments});
 
+};
+
+TrickOrTreat.prototype.sendMsgToAllChannelsSYNC = function(msg){
+	var channelIds =  Object.keys(this.getCurrentChannels());
+	for(var i=0;i<channelIds.length;i++){
+		this.sendMessageToChannelSYNC(this.slackObj.getChannelGroupOrDMByID(channelIds[i]),msg);
+	}
 };
 
 TrickOrTreat.prototype.sendMsgToAllChannels = function(msg,attachments){
@@ -287,12 +317,11 @@ TrickOrTreat.prototype.slackObjError = function(error){
 TrickOrTreat.prototype.error = function(error){
 	this.log('error',error);
 	if(this.slackObj.connected){
-		this.sendMsgToAllChannels("An error has occured and I need to restart, please stand by!\n\n(I just sent crash logs to  @"+this.config.superadmins.join(" & @")+")");
-		this.sendMessageToSuperAdmins("Hey, I crashed on this error: "+error);	
+		this.sendMsgToAllChannelsSYNC("An error has occured and I need to restart, please stand by!\n\n(Tell @"+this.config.superadmins.join(" & @")+" to check the logs)");	
 	}else{
 		this.log('error',"I cannot send out error messages without a slack connection!");
 	}
-	setTimeout(function(){process.exit(1);},1000);
+	process.exit(1);
 };
 
 TrickOrTreat.prototype.addHumor = function(msg){

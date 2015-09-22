@@ -107,6 +107,29 @@ function TreatStrings(){
 		"Ok!",
 	];
 
+	this.playReminders = [
+		"Have you played !trt today?",
+		"I'm just checking in to remind you all to play some !trt",
+		"Double candy time! (in your dreams)",
+		"*cough* play !trt *cough*",
+		"Get yer candy here, fresh candy, twice daily!",
+	];
+
+	this.alreadyPlayed = [
+		"You've already Trick or Treated twice today!",
+		"Nope, no more candy for you today",
+		"Sorry, I have to cut you off for now",
+		"No more candy for you till tomorrow",
+		"I'm only giving out 2 pieces of candy per person a day",
+		"Too much candy can make you sick!",
+		"Sorry, all out!",
+		"Go away, I'm sleeping!",
+		"Please leave a message after the tone... *beep*",
+		"No candy for you!",
+		"Ask again later",
+		"I don't really feel like giving you any more candy",
+	];
+
 }
 	
 module.exports = TreatStrings;

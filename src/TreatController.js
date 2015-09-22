@@ -1,5 +1,7 @@
 var ChanceJS = require('chance');
 var chance = new ChanceJS();
+var TreatStrings = require('./strings.js');
+var treatStrings = new TreatStrings();
 
 function TreatController(TrickOrTreatOBJ){
 	this.trt = TrickOrTreatOBJ;
@@ -38,7 +40,8 @@ TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,res
 	if(results.length > 0){
 		var numPlayedToday = results[0].numPlayedToday;
 		if(numPlayedToday >= 2){
-			callback("You've alrady Trick or Treated twice today! (Day resets at midnight, central standard time)");
+			var timeTillReset = this.trt.timeTillDayReset();
+			callback(userObj.name+": "+chance.pick(treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+", "+timeTillReset.minutesStr+")");
 			return;
 		}
 
