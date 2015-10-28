@@ -53,13 +53,13 @@ TrickOrTreat.prototype.timeTillDayReset = function(){
 	var date = new Date();
 	var hour = date.getHours();
 	var minutes = date.getMinutes();
-	var hoursLeft = 24-hour;
+	var hoursLeft = 23-hour;
 	var minutesLeft = 60-minutes;
 	return {
 		hours:hoursLeft,
-		hoursStr: hoursLeft+" hour"+(hoursLeft>1?"s":""),
+		hoursStr: (hoursLeft>0?hoursLeft+" hour"+(hoursLeft!=1?"s":""):""),
 		minutes : minutesLeft,
-		minutesStr : minutesLeft+" minute"+(minutesLeft>1?"s":"")
+		minutesStr : minutesLeft+" minute"+(minutesLeft!=1?"s":"")
 	};
 }
 
@@ -72,7 +72,7 @@ TrickOrTreat.prototype.checkIfWeNeedToResetDay = function(){
 	}
 	if(hour == 6 && minute == 0){
 		var timeTillReset = this.timeTillDayReset();
-		this.sendMsgToAllChannels("@here "+chance.pick(treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+", "+timeTillReset.minutesStr+")");
+		this.sendMsgToAllChannels("@here "+chance.pick(treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 	}
 }
 
@@ -170,6 +170,7 @@ TrickOrTreat.prototype.processMessage = function(message){
 			this.botface.currentImage = msgArray[2];
 			this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.okay));
 			break;
+		/*
 		case 'give':
 			var response = TOTController.giveCandy(msgArray[2],msgArray[3],msgArray[4]);
 			if(response.success){
