@@ -4,7 +4,7 @@ var Service = require('node-windows').Service;
 var svc = new Service({
 	name:'Trick or Treat',
 	description: 'A Slack chat bot that hands out candy!',
-	script: 'C:\\Server\\Data\\ApacheData\\TrickOrTreatReWrite\\init.js'
+	script: require('path').join(__dirname,'init.js')
 });
 
 svc.on('install',function(){
