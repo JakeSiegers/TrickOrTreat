@@ -1,0 +1,34 @@
+{
+  "name": "trick-or-treat",
+  "version": "1.0.0",
+  "description": "A Slack bot that hands out candy!",
+  "main": "init.js",
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "chance": "^0.7.7",
+    "mysql": "^2.9.0",
+    "mathjs": "^2.2.0",
+    "slack-client": "^1.4.1",
+    "node-windows": "^0.1.10"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JakeSiegers/TrickOrTreat.git"
+  },
+  "keywords": [
+    "trick",
+    "treat",
+    "slack",
+    "candy"
+  ],
+  "author": "Jake Siegers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JakeSiegers/TrickOrTreat/issues"
+  },
+  "homepage": "https://github.com/JakeSiegers/TrickOrTreat#readme"
+}
