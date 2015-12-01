@@ -28,6 +28,8 @@ TreatDatabase.prototype.insertPlayer = function(playerId,playerName,callback){
 	this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW()',[playerId,playerName],callback);
 }
 
+//right now there's a hard limit of only adding one of each type of candy.
+//That will be updated shortly.
 TreatDatabase.prototype.giveUserCandies = function(userObj,candies,callback){
 	//load up on candies!
 	var candiesAlreadyHave = {}
@@ -49,44 +51,97 @@ TreatDatabase.prototype.giveUserCandies = function(userObj,candies,callback){
 
 	var sThis = this;
 
-	//ADD A TRANSACTION TO THIS QUERY!
-	//MAYBE DO THIS QUERY ALL AT ONCE? - this sounds good.
-	//Multiple statement queries
-	//Would fix issues of errors firing and breaking stuff - that's what the transactions are for!
-
 	//update play count!
 	this.dbc.query('UPDATE players SET lastPlayed=NOW(),numPlayedToday = numPlayedToday+1 WHERE playerId=?',[userObj.id],function(error,results,fields){
 		if(error !== null){sThis.trt.error(error); return;}
 	});
 
 	var getCurrentCandiesQuery = 'SELECT playerCandyId,candyId,playerId,amount FROM playercandies '+searchAndStr;
-	//console.log(getCurrentCandiesQuery);
-	this.dbc.query(getCurrentCandiesQuery,searchParams,function(error,results,fields){
-		if(error !== null){sThis.trt.error(error); return;}
 
-		//player already has candy!
-		for(var i=0;i<results.length;i++){
-			candiesAlreadyHave[results[i].candyId] = true;
-			sThis.dbc.query('UPDATE playercandies SET amount=? WHERE playerCandyId=?',[results[i].amount+1,results[i].playerCandyId],function(error,results,fields){
-				if(error !== null){sThis.trt.error(error); return;}
-			});
-		}
-
-		//insert new candies for candies that do not exist in player inventory.
-		for (var candyId in candiesAlreadyHave){
-			if(!candiesAlreadyHave[candyId]){
-				sThis.dbc.query('INSERT INTO playercandies SET candyId=?,playerId=?,amount=1',[candyId,userObj.id],function(error,results,fields){
-					if(error !== null){sThis.trt.error(error); return;}
-				});
-			}
-		}
-	});
-
-	//Yeah, this callback fires instantly, even though the query above may not have fired yet.
-	//We need to adjust this!
-	callback();
+	this.dbc.query(getCurrentCandiesQuery,searchParams,this.giveUserCandies_updateOldCandies.bind(this,candiesAlreadyHave,userObj,callback));
 }
 
+TreatDatabase.prototype.giveUserCandies_updateOldCandies = function(candiesAlreadyHave,userObj,callback,error,results,fields){
+	if(error !== null){this.trt.error(error); return;}
+
+	var updateSql = "UPDATE playercandies SET amount = CASE playerCandyId ";
+	var updateParams = [];
+	var candyIdsToUpdate = [];
+	for(var i=0;i<results.length;i++){
+		candiesAlreadyHave[results[i].candyId] = true;
+
+		candyIdsToUpdate.push(results[i].playerCandyId);
+		updateParams.push(results[i].playerCandyId);
+		updateParams.push(results[i].amount+1);
+		
+		updateSql += "WHEN ? THEN ? ";
+	}
+
+	updateSql += "END ";
+	var inStr = "";
+	for(var i=0;i<candyIdsToUpdate.length;i++){
+		inStr+=candyIdsToUpdate[i];
+		if(i!=candyIdsToUpdate.length-1){
+			inStr+=",";
+		}
+	}
+	updateSql += "WHERE playerCandyId IN ("+inStr+")";
+
+	if(candyIdsToUpdate.length == 0){
+		//console.log("All candy was new!");
+		//Send null for error, because there was none!
+		this.giveUserCandies_insertNewCandies(candiesAlreadyHave,userObj,callback,null);
+	}else{
+		//candy that needs to be updated before adding new candy
+		//console.log(updateSql);
+		this.dbc.query(updateSql,updateParams,this.giveUserCandies_insertNewCandies.bind(this,candiesAlreadyHave,userObj,callback));	
+	}	
+}
+
+TreatDatabase.prototype.giveUserCandies_insertNewCandies = function(candiesAlreadyHave,userObj,callback,error,results,fields){
+	if(error !== null){this.trt.error(error); return;}
+
+	//insert new candies for candies that do not exist in player inventory.
+	
+	var insertSql = "INSERT INTO playercandies (candyId,playerId,amount) VALUES ";
+	var insertParams = [];
+	var numToInsert = 0;
+	for (var candyId in candiesAlreadyHave){
+		if(!candiesAlreadyHave[candyId]){
+			numToInsert++;
+			insertSql+= "(?,?,1),";
+			insertParams.push(candyId);
+			insertParams.push(userObj.id);
+		}
+	}
+	
+
+	if(numToInsert > 0 ){
+		//remove last ,
+		insertSql = insertSql.substring(0, insertSql.length - 1);
+
+		//console.log(insertSql);
+
+		var sThis = this;
+		this.dbc.query(insertSql,insertParams,function(error,results,fields){
+			if(error !== null){sThis.trt.error(error); return;}
+			callback();
+		});	
+	}else{
+		//console.log("No insert candy");
+		callback();
+	}
+}
+
+TreatDatabase.prototype.logData = function(fields,callback){
+	/*var sThis = this;
+	this.dbc.query('INSERT INTO posts SET ?',fields, function(error, result) {
+		if(error !== null){sThis.trt.error(error); return;}
+
+		callback();
+		//console.log(result.insertId);
+	});*/
+}
 
 TreatDatabase.prototype.getAllCandies = function(callback){
 	this.dbc.query('SELECT candyId,candyName,candyIcon FROM candies',[],callback);

@@ -37,9 +37,10 @@ TreatController.prototype.goTrickOrTreating = function(userObj,callback){
 
 TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
+
 	if(results.length > 0){
 		var numPlayedToday = results[0].numPlayedToday;
-		if(numPlayedToday >= 2){
+		if(numPlayedToday >= 4){
 			var timeTillReset = this.trt.timeTillDayReset();
 			callback(userObj.name+": "+chance.pick(treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 			return;
@@ -126,7 +127,7 @@ TreatController.prototype.returnCandyCountAttachment = function(userObj,callback
 			"short":true
 		});
 	}
-	callback(userObj.name+", you have:",[{"color": "#0000FF",title:"(This Format is still in beta, please let me know what you think!)",fields:candyTable}]);
+	callback(userObj.name+", you have:",[{"color": "#f1952a",title:"",fields:candyTable}]);
 }
 
 

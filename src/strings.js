@@ -79,15 +79,20 @@ function TreatStrings(){
 	};
 
 	this.bleepsAndBloopsEnd = [
-		"*Mechinical Whurring*",
+		"*Mechinical Whirring*",
 		"*Beep!*",
 		"*Boop!*",
+		"*cough, er... beep!*",
+		"[and your lucky number today is 17]",
 		"*BoopBeep!*",
 		"[End Of Message] *Buuuurzzzpt*",
 		"*Ding!*",
 		"*Yippie!*",
-		"*Evil Laughter*",
-		"\n(... maybe I'll change my name to "+chance.first()+" ... )"
+		"*Evil Laughter*"
+	];
+
+	//These will be for did you know facts soon.
+	this.didYouKnow = [
 	];
 
 	this.bleepsAndBloopsStart = [
@@ -116,11 +121,11 @@ function TreatStrings(){
 	];
 
 	this.alreadyPlayed = [
-		"You've already Trick or Treated twice today!",
+		"You've already Trick or Treated too many times today!",
 		"Nope, no more candy for you today",
 		"Sorry, I have to cut you off for now",
 		"No more candy for you till tomorrow",
-		"I'm only giving out 2 pieces of candy per person a day",
+		"I'm only giving out a limited about of candy per person a day",
 		"Too much candy can make you sick!",
 		"Sorry, all out!",
 		"Go away, I'm sleeping!",
