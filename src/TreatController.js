@@ -40,7 +40,7 @@ TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,res
 
 	if(results.length > 0){
 		var numPlayedToday = results[0].numPlayedToday;
-		if(numPlayedToday >= 4){
+		if(numPlayedToday >= 2){
 			var timeTillReset = this.trt.timeTillDayReset();
 			callback(userObj.name+": "+chance.pick(treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 			return;
