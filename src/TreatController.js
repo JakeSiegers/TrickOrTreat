@@ -108,7 +108,7 @@ TreatController.prototype.giveUserCandiesConfirm = function(userObj,candiesGiven
 // ==========================================================================================
 
 TreatController.prototype.generateLeaderboard = function(callback){
-	this.trt.database.getPlayerCandyTotals(this.returnGenerateLeaderboard.bind(this,callback));
+	this.trt.database.getPlayerCandyTopTen(this.returnGenerateLeaderboard.bind(this,callback));
 }
 
 TreatController.prototype.returnGenerateLeaderboard = function(callback,error,results,fields){
@@ -127,7 +127,7 @@ TreatController.prototype.returnGenerateLeaderboard = function(callback,error,re
 			"short":false
 		});
 	}
-	callback("Player Candy Leaderboard:",[{"color": "#f1952a",title:"",fields:candyTable}]);
+	callback("Top 10 Players:",[{"color": "#f1952a",title:"",fields:candyTable}]);
 }
 
 // ==========================================================================================

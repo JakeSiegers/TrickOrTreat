@@ -28,8 +28,8 @@ TreatDatabase.prototype.insertPlayer = function(playerId,playerName,callback){
 	this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW()',[playerId,playerName],callback);
 }
 
-TreatDatabase.prototype.getPlayerCandyTotals = function(callback){
-	this.dbc.query('SELECT playerName,players.playerId,sum(amount) as total FROM playercandies JOIN players ON playercandies.playerId = players.playerId GROUP BY players.playerId ORDER BY total DESC',[],callback);
+TreatDatabase.prototype.getPlayerCandyTopTen = function(callback){
+	this.dbc.query('SELECT playerName,players.playerId,sum(amount) as total FROM playercandies JOIN players ON playercandies.playerId = players.playerId GROUP BY players.playerId ORDER BY total DESC LIMIT 10',[],callback);
 }
 
 //right now there's a hard limit of only adding one of each type of candy.
