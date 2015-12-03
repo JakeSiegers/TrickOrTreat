@@ -120,14 +120,14 @@ TrickOrTreat.prototype.processMessage = function(message){
 	switch(msgArray[1]){
 		case undefined: //play the game
 			if(inMainChannels){
-				this.controller.goTrickOrTreating(msgUserObj,this.trtResponse.bind(this,msgChannel));
+				this.controller.goTrickOrTreating(msgUserObj,this.genericResponse.bind(this,msgChannel));
 				//this.sendMessageToChannel(msgChannel,msgUserObj.name+" went trick or treating");
 			}else{
 				this.sendMessageToUser(msgUserObj.id,"I will not take you trick or treating in private.\nPlease use one of the following channels: #"+this.getCurrentChannelNames().join(" or #"));	
 			}
 			break;
 		case 'register':
-			this.controller.register(msgUserObj,this.registerResponse.bind(this,msgChannel));
+			this.controller.register(msgUserObj,this.genericResponse.bind(this,msgChannel));
 			break;
 		case 'help':
 			//if(msgArray[2])
@@ -188,9 +188,11 @@ TrickOrTreat.prototype.processMessage = function(message){
 			}
 			break;
 		case 'count':
-			this.controller.generateCandyCountAttachment(msgUserObj,this.countResponce.bind(this,msgChannel));
+			this.controller.generateCandyCountAttachment(msgUserObj,this.genericResponseWithAttachment.bind(this,msgChannel));
 			break;
-		
+		case 'leaders':
+			this.controller.generateLeaderboard(this.genericResponseWithAttachment.bind(this,msgChannel));
+			break;
 		default:
 			this.sendMessageToChannel(msgChannel,"Unknown command (try using !trt help)");
 			break;
@@ -199,18 +201,19 @@ TrickOrTreat.prototype.processMessage = function(message){
 
 };
 
-TrickOrTreat.prototype.registerResponse = function(channel,msg){
+//Anytime the controller just responds with a message!
+TrickOrTreat.prototype.genericResponse = function(channel,msg){
 	this.sendMessageToChannel(channel,msg);
 };
 
-TrickOrTreat.prototype.trtResponse = function(channel,msg){
-	this.sendMessageToChannel(channel,msg);
-};
-
-TrickOrTreat.prototype.countResponce = function(channel,msg,attachment){
+//Anytime the controller just responds with a an attachment!
+TrickOrTreat.prototype.genericResponseWithAttachment = function(channel,msg,attachment){
 	this.sendMessageToChannel(channel,msg,attachment);
 }
+
+
 TrickOrTreat.prototype.resetCooldownsResponse = function(name,error,results,fields){
+	//TODO: No database code in this class, get that out of here
 	if(error !== null){ this.error(error); return;}
 	this.sendMsgToAllChannels(name+" reset the game day!");
 }

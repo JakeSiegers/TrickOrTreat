@@ -107,6 +107,31 @@ TreatController.prototype.giveUserCandiesConfirm = function(userObj,candiesGiven
 
 // ==========================================================================================
 
+TreatController.prototype.generateLeaderboard = function(callback){
+	this.trt.database.getPlayerCandyTotals(this.returnGenerateLeaderboard.bind(this,callback));
+}
+
+TreatController.prototype.returnGenerateLeaderboard = function(callback,error,results,fields){
+	if(error !== null){ this.trt.error(error); return;}
+
+	if(results.length == 0){
+		callback("No one has any candy");
+		return false;
+	}
+	var candyTable=[];
+	for(var i=0;i<results.length;i++){
+		//candyTable+=(results[i].amount>=1000?'*a boatload of*':results[i].amount)+" "+results[i].candyIcon+" "+results[i].candyName+"\n"
+		candyTable.push({
+			//"title":,
+			"value":"#"+(i+1)+": "+results[i].playerName+" = "+results[i].total,
+			"short":false
+		});
+	}
+	callback("Player Candy Leaderboard:",[{"color": "#f1952a",title:"",fields:candyTable}]);
+}
+
+// ==========================================================================================
+
 TreatController.prototype.generateCandyCountAttachment = function(userObj,callback){
 	this.trt.database.getCandyCountOfPlayer(userObj.id,this.returnCandyCountAttachment.bind(this,userObj,callback));
 }
