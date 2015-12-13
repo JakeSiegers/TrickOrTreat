@@ -4,6 +4,28 @@ var chance = new ChanceJS();
 
 function TreatDatabase(TrickOrTreatOBJ){
 	this.trt = TrickOrTreatOBJ;
+	
+	this.test = "test";
+
+	//Woaaah, backticks for multi-line support in node/es6. Welcome to spookville.
+	//Sublime doesn't even know how to syntax-hightlight this yet.
+	this.leaderBaseQuery = `
+	SELECT rank,playerName,playerId,total FROM(
+		SELECT @rn:=@rn+1 AS rank,playerName,playerId,total
+		FROM (
+			SELECT playerName,players.playerId, sum(amount) AS total 
+			FROM playercandies 
+			JOIN players ON playercandies.playerId = players.playerId 
+			GROUP BY players.playerId 
+			ORDER BY total DESC
+		) AS leaders, 
+		(
+			SELECT @rn:=0
+		) AS rankCounter
+	) AS leadersWithRanks
+	`;
+
+
 }
 
 TreatDatabase.prototype.initDatabaseConnection = function(callback){
@@ -29,7 +51,11 @@ TreatDatabase.prototype.insertPlayer = function(playerId,playerName,callback){
 }
 
 TreatDatabase.prototype.getPlayerCandyTopTen = function(callback){
-	this.dbc.query('SELECT playerName,players.playerId,sum(amount) as total FROM playercandies JOIN players ON playercandies.playerId = players.playerId GROUP BY players.playerId ORDER BY total DESC LIMIT 10',[],callback);
+	this.dbc.query(this.leaderBaseQuery+' LIMIT 10',[],callback);
+}
+
+TreatDatabase.prototype.getPlayerRank = function(playerId,callback){
+	this.dbc.query(this.leaderBaseQuery+' WHERE playerId = ?',[playerId],callback);
 }
 
 //right now there's a hard limit of only adding one of each type of candy.

@@ -51,31 +51,12 @@ function TreatStrings(){
 
 	
 	this.help = {
-		'!trt':{
-			short:"You go trick or treating",
-			long:"You go trick or treating (Assuming you're registered) - this allows you to earn up to three pieces of candy, twice a day."
-		},
-		'!trt register':{
-			short:"Registers your account in order to start playing the game",
-			long:"Registers your account in order to start playing the game"
-		},
-		'!trt count':{
-			short:"Shows your current candy counts",
-			long:"Shows your current candy counts"
-		},
-		//'!trt give':{
-		//	short:"Usage: !trt give {number} {candy} {player}",
-		//	long:"Usage: !trt give {number} {candy} {player} \n Use this to donate some of your candy to another player - not to be confused with !trt trade"
-		//},
-		'!trt help':{
-			short:"Shows this block of text",
-			long:"Shows this block of text"
-		},
-		'!trt solve':{
-			short:"Solve math problems!",
-			long:"Solve math problems!"
-		}
-
+		'!trt':"You go trick or treating",
+		'!trt count':"Shows your current candy counts",			
+		'!trt leaders':"Shows the top 10 players",
+		'!trt rank':"Shows your current rank",
+		'!trt help':"Shows this block of text",
+		'!trt solve':"Solve math problems!"
 	};
 
 	this.bleepsAndBloopsEnd = [

@@ -14,13 +14,14 @@ function TrickOrTreat(){
 	this.slackObj = new Slack(this.config.token, true, true);
 	this.database = new TreatDatabase(this);
 	this.controller = new TreatController(this);
+	this.numSlackConnections = 0;
 
 	this.botface = {
 		defaultName: this.config.botName,
 		currentName: this.config.botName,
 		defaultImage: this.config.botImage,
 		currentImage: this.config.botImage
-	}
+	};
 
 	this.log('info','Connecting to MySQL ... ');
 	this.database.initDatabaseConnection(this.databaseConnected.bind(this));
@@ -36,6 +37,15 @@ TrickOrTreat.prototype.databaseConnected = function(){
 
 
 TrickOrTreat.prototype.slackConnectionOpened = function(){
+	this.numSlackConnections++;
+	if(this.numSlackConnections > 1){
+		if(this.slackObj.connected){
+			this.sendMsgToAllChannelsSYNC("Yo, @sirtopeia I detected the \"TRT double bug\" and just stopped it. Good job programming me! (Connection to slack lost, then recovered)");
+		}
+		return false;
+	}
+	console.log(this.numSlackConnections);
+
 	this.log('success','Successfully Logged Into Slack - Ready to process messages');
 
 	this.log('info',"I'm logged into the following channels:\n---------\n"+this.getCurrentChannelNames().join("\n")+"\n---------");
@@ -61,20 +71,20 @@ TrickOrTreat.prototype.timeTillDayReset = function(){
 		minutes : minutesLeft,
 		minutesStr : minutesLeft+" minute"+(minutesLeft!=1?"s":"")
 	};
-}
+};
 
 TrickOrTreat.prototype.checkIfWeNeedToResetDay = function(){
 	var d = new Date();
-	var hour = d.getHours()
-	var minute = d.getMinutes()
-	if(hour == 0 && minute == 0){ //midnight local time!
+	var hour = d.getHours();
+	var minute = d.getMinutes();
+	if(hour === 0 && minute === 0){ //midnight local time!
 		this.database.resetCooldowns(this.resetCooldownsResponse.bind(this,"Hey all, It's midnight, so I just"));
 	}
-	if(hour == 6 && minute == 0){
+	if(hour == 6 && minute === 0){
 		var timeTillReset = this.timeTillDayReset();
 		this.sendMsgToAllChannels("@here "+chance.pick(treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 	}
-}
+};
 
 TrickOrTreat.prototype.processMessage = function(message){
 	var msgChannel = this.slackObj.getChannelGroupOrDMByID(message.channel);
@@ -115,7 +125,7 @@ TrickOrTreat.prototype.processMessage = function(message){
 	}
 
 	var msgArray = this.parseMessage(message.text);
-	if(msgArray[0] !== '!trt'){return false;}
+	if(msgArray[0].toLowerCase() !== '!trt' && msgArray[0].toLowerCase() !== '!trickortreat'){return false;}
 
 	switch(msgArray[1]){
 		case undefined: //play the game
@@ -193,6 +203,9 @@ TrickOrTreat.prototype.processMessage = function(message){
 		case 'leaders':
 			this.controller.generateLeaderboard(this.genericResponseWithAttachment.bind(this,msgChannel));
 			break;
+		case 'rank':
+			this.controller.showPlayerRank(msgUserObj,this.genericResponse.bind(this,msgChannel));
+			break;
 		default:
 			this.sendMessageToChannel(msgChannel,"Unknown command (try using !trt help)");
 			break;
@@ -209,14 +222,14 @@ TrickOrTreat.prototype.genericResponse = function(channel,msg){
 //Anytime the controller just responds with a an attachment!
 TrickOrTreat.prototype.genericResponseWithAttachment = function(channel,msg,attachment){
 	this.sendMessageToChannel(channel,msg,attachment);
-}
+};
 
 
 TrickOrTreat.prototype.resetCooldownsResponse = function(name,error,results,fields){
 	//TODO: No database code in this class, get that out of here
 	if(error !== null){ this.error(error); return;}
 	this.sendMsgToAllChannels(name+" reset the game day!");
-}
+};
 
 
 TrickOrTreat.prototype.parseMessage = function(message){
@@ -226,7 +239,6 @@ TrickOrTreat.prototype.parseMessage = function(message){
 	}
 	return params;
 };
-
 
 
 // ==== SENDING MESSAGES =====
@@ -339,6 +351,20 @@ TrickOrTreat.prototype.addHumor = function(msg){
 	}
 	
 	return edited;	
+};
+
+TrickOrTreat.prototype.pluralize = function(word,amount){
+	var words = {
+		'candy':'candies'
+	};
+
+	if(word in words){
+		if(amount == 1){
+			return word;
+		}
+		return words[word];
+	}
+	return word;
 };
 
 TrickOrTreat.prototype.log = function(type,msg){

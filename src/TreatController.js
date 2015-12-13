@@ -9,23 +9,19 @@ function TreatController(TrickOrTreatOBJ){
 
 // ================= REGISTER USER ============================================================
 
-TreatController.prototype.register = function(userObj,callback){
-	this.trt.database.getPlayerById(userObj.id,this.registerCheckUserExists.bind(this,userObj,callback))
-};
-
 TreatController.prototype.registerCheckUserExists = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
 	if(results.length > 0){
 		callback(userObj.name+", you're *already* registered! You don't need to register twice, silly!");
 		return;
 	}else{
-		this.trt.database.insertPlayer(userObj.id,userObj.name,this.registerFinish.bind(this,userObj,callback))
+		this.trt.database.insertPlayer(userObj.id,userObj.name,this.registerFinish.bind(this,userObj,callback));
 	}
 };
 
 TreatController.prototype.registerFinish = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
-	callback(userObj.name+", you've been registered!");
+	callback(userObj.name+", Welcome to Trick or Treat! Type \"!trt help\" to learn how to use me, or type \"!trt\" again to start playing!");
 	return;
 };
 
@@ -33,7 +29,7 @@ TreatController.prototype.registerFinish = function(userObj,callback,error,resul
 
 TreatController.prototype.goTrickOrTreating = function(userObj,callback){
 	this.trt.database.getPlayerById(userObj.id,this.checkUserCanPlay.bind(this,userObj,callback));
-}
+};
 
 TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
@@ -45,30 +41,28 @@ TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,res
 			callback(userObj.name+": "+chance.pick(treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 			return;
 		}
-
 		this.userCanPlay(userObj,callback);
 	}else{
-		callback(userObj.name+", I don't know who you are! (sign up to play using \"!trt register\")");
+		//User doesn't exist, let's register them!
+		this.trt.database.getPlayerById(userObj.id,this.registerCheckUserExists.bind(this,userObj,callback));
 		return;
 	}
-}
+};
 
 TreatController.prototype.userCanPlay = function(userObj,callback){
-	
 	//This is where you can choose what actually happens in the game, like events or whatnot.
 	//For now we'll jusy assume you're rolling for candy, and play for candy.
 
-
 	//Normal candyevent.
 	this.trt.database.getAllCandies(this.giveUserCandies.bind(this,userObj,callback));
-}
+};
 
 
 
 TreatController.prototype.giveUserCandies = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
 
-	if(results.length == 0){
+	if(results.length === 0){
 		//There's no candy in the database!
 		this.trt.log("warning","No candy in the database to give out!");
 		callback("I have no candies to give!\n(Did an admin forget to fill up the candy database?)");
@@ -76,10 +70,10 @@ TreatController.prototype.giveUserCandies = function(userObj,callback,error,resu
 	}
 
 	var amount = 1;
-	if(Math.floor(Math.random()*25) == 0){
+	if(Math.floor(Math.random()*25) === 0){
 		amount = 2;
 	}
-	if(Math.floor(Math.random()*50) == 0){
+	if(Math.floor(Math.random()*50) === 0){
 		amount = 3;
 	}
 
@@ -89,13 +83,13 @@ TreatController.prototype.giveUserCandies = function(userObj,callback,error,resu
 	}
 
 	this.trt.database.giveUserCandies(userObj,candiesGiven,this.giveUserCandiesConfirm.bind(this,userObj,candiesGiven,callback));
-}
+};
 
 TreatController.prototype.giveUserCandiesConfirm = function(userObj,candiesGiven,callback){
 
 	var candyStr = "";
 	for(var i=0;i<candiesGiven.length;i++){
-		candyStr += (i>0?'*AND* ':'')+'one '+candiesGiven[i].candyIcon+' '+candiesGiven[i].candyName+"\n"
+		candyStr += (i>0?'*AND* ':'')+'one '+candiesGiven[i].candyIcon+' '+candiesGiven[i].candyName+"\n";
 	}
 
 	if(candiesGiven.length >= 3){
@@ -103,18 +97,18 @@ TreatController.prototype.giveUserCandiesConfirm = function(userObj,candiesGiven
 	}else{
 		callback(userObj.name+", you received "+candyStr);
 	}
-}
+};
 
 // ==========================================================================================
 
 TreatController.prototype.generateLeaderboard = function(callback){
 	this.trt.database.getPlayerCandyTopTen(this.returnGenerateLeaderboard.bind(this,callback));
-}
+};
 
 TreatController.prototype.returnGenerateLeaderboard = function(callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
 
-	if(results.length == 0){
+	if(results.length === 0){
 		callback("No one has any candy");
 		return false;
 	}
@@ -128,18 +122,36 @@ TreatController.prototype.returnGenerateLeaderboard = function(callback,error,re
 		});
 	}
 	callback("Top 10 Players:",[{"color": "#f1952a",title:"",fields:candyTable}]);
-}
+};
 
 // ==========================================================================================
 
+TreatController.prototype.showPlayerRank = function(playerObj,callback){
+	this.trt.database.getPlayerRank(playerObj.id,this.returnShowPlayerRank.bind(this,callback));
+};
+
+TreatController.prototype.returnShowPlayerRank = function(callback,error,results,fields){
+	if(error !== null){ this.trt.error(error); return;}
+
+	if(results.length === 0){
+		callback("I don't know who you are!");
+		return false;
+	}
+
+	callback(results[0].playerName+", is rank "+results[0].rank+" with "+results[0].total+" "+this.trt.pluralize("candy",results[0].total));
+};
+
+// ==========================================================================================
+
+
 TreatController.prototype.generateCandyCountAttachment = function(userObj,callback){
 	this.trt.database.getCandyCountOfPlayer(userObj.id,this.returnCandyCountAttachment.bind(this,userObj,callback));
-}
+};
 
 TreatController.prototype.returnCandyCountAttachment = function(userObj,callback,error,results,fields){
 	if(error !== null){ this.trt.error(error); return;}
 
-	if(results.length == 0){
+	if(results.length === 0){
 		callback(userObj.name+", you don't have any candy! Go get some with !trt");
 		return false;
 	}
@@ -153,7 +165,7 @@ TreatController.prototype.returnCandyCountAttachment = function(userObj,callback
 		});
 	}
 	callback(userObj.name+", you have:",[{"color": "#f1952a",title:"",fields:candyTable}]);
-}
+};
 
 
 module.exports = TreatController;
