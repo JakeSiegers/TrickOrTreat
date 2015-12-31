@@ -1,7 +1,5 @@
 var ChanceJS = require('chance');
 var chance = new ChanceJS();
-var TreatStrings = require('./strings.js');
-var treatStrings = new TreatStrings();
 
 function TreatController(TrickOrTreatOBJ){
 	this.trt = TrickOrTreatOBJ;
@@ -38,7 +36,7 @@ TreatController.prototype.checkUserCanPlay = function(userObj,callback,error,res
 		var numPlayedToday = results[0].numPlayedToday;
 		if(numPlayedToday >= 2){
 			var timeTillReset = this.trt.timeTillDayReset();
-			callback(userObj.name+": "+chance.pick(treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
+			callback(userObj.name+": "+chance.pick(this.trt.treatStrings.alreadyPlayed)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 			return;
 		}
 		this.userCanPlay(userObj,callback);
@@ -53,8 +51,14 @@ TreatController.prototype.userCanPlay = function(userObj,callback){
 	//This is where you can choose what actually happens in the game, like events or whatnot.
 	//For now we'll jusy assume you're rolling for candy, and play for candy.
 
-	//Normal candyevent.
-	this.trt.database.getAllCandies(this.giveUserCandies.bind(this,userObj,callback));
+	if(chance.bool({likelihood: 10})){
+		var sugarRush = require('./events/sugarRush.js');
+		new sugarRush(this.trt,userObj,callback);
+	}else{
+		//Normal candyevent.
+		this.trt.database.getAllCandies(this.giveUserCandies.bind(this,userObj,callback));
+	}
+	
 };
 
 
@@ -123,6 +127,10 @@ TreatController.prototype.returnGenerateLeaderboard = function(callback,error,re
 	}
 	callback("Top 10 Players:",[{"color": "#f1952a",title:"",fields:candyTable}]);
 };
+
+// ==========================================================================================
+
+
 
 // ==========================================================================================
 

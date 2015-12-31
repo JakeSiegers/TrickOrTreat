@@ -9,22 +9,7 @@ function TreatDatabase(TrickOrTreatOBJ){
 
 	//Woaaah, backticks for multi-line support in node/es6. Welcome to spookville.
 	//Sublime doesn't even know how to syntax-hightlight this yet.
-	this.leaderBaseQuery = `
-	SELECT rank,playerName,playerId,total FROM(
-		SELECT @rn:=@rn+1 AS rank,playerName,playerId,total
-		FROM (
-			SELECT playerName,players.playerId, sum(amount) AS total 
-			FROM playercandies 
-			JOIN players ON playercandies.playerId = players.playerId 
-			GROUP BY players.playerId 
-			ORDER BY total DESC
-		) AS leaders, 
-		(
-			SELECT @rn:=0
-		) AS rankCounter
-	) AS leadersWithRanks
-	`;
-
+	this.leaderBaseQuery = "SELECT rank,playerName,playerId,total FROM(SELECT @rn:=@rn+1 AS rank,playerName,playerId,total FROM (SELECT playerName,players.playerId, sum(amount) AS total FROM playercandies JOIN players ON playercandies.playerId = players.playerId GROUP BY players.playerId ORDER BY total DESC) AS leaders,(SELECT @rn:=0) AS rankCounter) AS leadersWithRanks";
 
 }
 
@@ -44,26 +29,26 @@ TreatDatabase.prototype.initDatabaseConnectionConnected = function(callback,erro
 // ===========================
 TreatDatabase.prototype.getPlayerById = function(playerId,callback){
 	this.dbc.query('SELECT playerId,playerName,lastPlayed,numPlayedToday FROM players WHERE playerId = ?',[playerId],callback);
-}
+};
 
 TreatDatabase.prototype.insertPlayer = function(playerId,playerName,callback){
 	this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW()',[playerId,playerName],callback);
-}
+};
 
 TreatDatabase.prototype.getPlayerCandyTopTen = function(callback){
 	this.dbc.query(this.leaderBaseQuery+' LIMIT 10',[],callback);
-}
+};
 
 TreatDatabase.prototype.getPlayerRank = function(playerId,callback){
 	this.dbc.query(this.leaderBaseQuery+' WHERE playerId = ?',[playerId],callback);
-}
+};
 
 //right now there's a hard limit of only adding one of each type of candy.
 //That will be updated shortly.
 TreatDatabase.prototype.giveUserCandies = function(userObj,candies,callback){
 	//load up on candies!
-	var candiesAlreadyHave = {}
-	var searchParams = new Array();
+	var candiesAlreadyHave = {};
+	var searchParams = [];
 	var searchAndStr = "";
 	searchParams.push(userObj.id);
 	for(var i=0;i<candies.length;i++){
@@ -89,7 +74,7 @@ TreatDatabase.prototype.giveUserCandies = function(userObj,candies,callback){
 	var getCurrentCandiesQuery = 'SELECT playerCandyId,candyId,playerId,amount FROM playercandies '+searchAndStr;
 
 	this.dbc.query(getCurrentCandiesQuery,searchParams,this.giveUserCandies_updateOldCandies.bind(this,candiesAlreadyHave,userObj,callback));
-}
+};
 
 TreatDatabase.prototype.giveUserCandies_updateOldCandies = function(candiesAlreadyHave,userObj,callback,error,results,fields){
 	if(error !== null){this.trt.error(error); return;}
@@ -117,7 +102,7 @@ TreatDatabase.prototype.giveUserCandies_updateOldCandies = function(candiesAlrea
 	}
 	updateSql += "WHERE playerCandyId IN ("+inStr+")";
 
-	if(candyIdsToUpdate.length == 0){
+	if(candyIdsToUpdate.length === 0){
 		//console.log("All candy was new!");
 		//Send null for error, because there was none!
 		this.giveUserCandies_insertNewCandies(candiesAlreadyHave,userObj,callback,null);
@@ -126,7 +111,7 @@ TreatDatabase.prototype.giveUserCandies_updateOldCandies = function(candiesAlrea
 		//console.log(updateSql);
 		this.dbc.query(updateSql,updateParams,this.giveUserCandies_insertNewCandies.bind(this,candiesAlreadyHave,userObj,callback));	
 	}	
-}
+};
 
 TreatDatabase.prototype.giveUserCandies_insertNewCandies = function(candiesAlreadyHave,userObj,callback,error,results,fields){
 	if(error !== null){this.trt.error(error); return;}
@@ -161,7 +146,7 @@ TreatDatabase.prototype.giveUserCandies_insertNewCandies = function(candiesAlrea
 		//console.log("No insert candy");
 		callback();
 	}
-}
+};
 
 TreatDatabase.prototype.logData = function(fields,callback){
 	/*var sThis = this;
@@ -171,18 +156,22 @@ TreatDatabase.prototype.logData = function(fields,callback){
 		callback();
 		//console.log(result.insertId);
 	});*/
-}
+};
 
 TreatDatabase.prototype.getAllCandies = function(callback){
 	this.dbc.query('SELECT candyId,candyName,candyIcon FROM candies',[],callback);
-}
+};
 
 TreatDatabase.prototype.getCandyCountOfPlayer = function(playerId,callback){
 	this.dbc.query('SELECT playerCandyId,playercandies.candyId,playerId,amount,candyName,candyIcon FROM playercandies LEFT JOIN candies ON candies.candyId = playercandies.candyId WHERE playerId = ? ',[playerId],callback);
-}
+};
+
+TreatDatabase.prototype.addToCooldown = function(callback,amountMore){
+	this.dbc.query('UPDATE players SET numPlayedToday=numPlayedToday-?',[amountMore],callback);
+};
 
 TreatDatabase.prototype.resetCooldowns = function(callback){
 	this.dbc.query('UPDATE players SET numPlayedToday=0',callback);
-}
+};
 
 module.exports = TreatDatabase;

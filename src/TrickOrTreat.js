@@ -7,13 +7,13 @@ var TreatDatabase = require('./TreatDatabase.js');
 var ChanceJS = require('chance');
 var chance = new ChanceJS();
 var TreatStrings = require('./strings.js');
-var treatStrings = new TreatStrings();
 
 function TrickOrTreat(){
 	this.config = require('./config');
 	this.slackObj = new Slack(this.config.token, true, true);
 	this.database = new TreatDatabase(this);
 	this.controller = new TreatController(this);
+	this.treatStrings = new TreatStrings();
 	this.numSlackConnections = 0;
 
 	this.botface = {
@@ -40,7 +40,7 @@ TrickOrTreat.prototype.slackConnectionOpened = function(){
 	this.numSlackConnections++;
 	if(this.numSlackConnections > 1){
 		if(this.slackObj.connected){
-			this.sendMsgToAllChannelsSYNC("Yo, @sirtopeia I detected the \"TRT double bug\" and just stopped it. Good job programming me! (Connection to slack lost, then recovered)");
+			this.sendMessageToSuperAdmins("I detected the \"TRT double bug\" and just stopped it. (Connection to slack lost, then recovered)");	
 		}
 		return false;
 	}
@@ -54,7 +54,7 @@ TrickOrTreat.prototype.slackConnectionOpened = function(){
 
 	//this.sendMessageToSuperAdmins("Hello SuperAdmins!");	
 	//this.sendMessageToAdmins("Hello Admins!");
-	this.sendMsgToAllChannels(chance.pick(treatStrings.randomIntroMessages));
+	this.sendMsgToAllChannels(chance.pick(this.treatStrings.randomIntroMessages));
 
 	timerInterval = setInterval(this.checkIfWeNeedToResetDay.bind(this),60000);
 };
@@ -82,7 +82,7 @@ TrickOrTreat.prototype.checkIfWeNeedToResetDay = function(){
 	}
 	if(hour == 6 && minute === 0){
 		var timeTillReset = this.timeTillDayReset();
-		this.sendMsgToAllChannels("@here "+chance.pick(treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
+		this.sendMsgToAllChannels("@here "+chance.pick(this.treatStrings.playReminders)+"\n(Day resets in "+timeTillReset.hoursStr+" "+timeTillReset.minutesStr+")");
 	}
 };
 
@@ -142,18 +142,18 @@ TrickOrTreat.prototype.processMessage = function(message){
 		case 'help':
 			//if(msgArray[2])
 			var help = [];
-			for(var topic in treatStrings.help){
+			for(var topic in this.treatStrings.help){
 				help.push({
 					"title":topic,
-					"value":treatStrings.help[topic].short,
+					"value":this.treatStrings.help[topic].short,
 					"short":false
 				});
 			}
-			this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.helpHeader),[{"color": "#36a64f",fields:help}]);
+			this.sendMessageToUser(msgUserObj.id,chance.pick(this.treatStrings.helpHeader),[{"color": "#36a64f",fields:help}]);
 			break;
 		case 'debug':
 			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
-				this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				this.sendMessageToUser(msgUserObj.id,chance.pick(this.treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
 				return false;
 			}
 			var paramStr = "";
@@ -167,18 +167,18 @@ TrickOrTreat.prototype.processMessage = function(message){
 		
 		case 'resetday':
 			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
-				this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				this.sendMessageToUser(msgUserObj.id,chance.pick(this.treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
 				return false;
 			}
 			this.database.resetCooldowns(this.resetCooldownsResponse.bind(this,msgUserObj.name));
 			break;
 		case 'setimage':
 			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
-				this.sendMessageToUser(msgUserObj.id,chance.pick(treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				this.sendMessageToUser(msgUserObj.id,chance.pick(this.treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
 				return false;
 			}
 			this.botface.currentImage = msgArray[2];
-			this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.okay));
+			this.sendMessageToChannel(msgChannel,chance.pick(this.treatStrings.okay));
 			break;
 		/*
 		case 'give':
@@ -192,7 +192,7 @@ TrickOrTreat.prototype.processMessage = function(message){
 		*/
 		case 'solve':
 			try{
-				this.sendMessageToChannel(msgChannel,chance.pick(treatStrings.randomSolveMessages),[{color:"#FF0000",text:math.eval(msgArray[2])}]);
+				this.sendMessageToChannel(msgChannel,chance.pick(this.treatStrings.randomSolveMessages),[{color:"#FF0000",text:math.eval(msgArray[2])}]);
 			}catch(e){
 				this.sendMessageToChannel(msgChannel,"Failed to solve!");
 			}
@@ -327,11 +327,11 @@ TrickOrTreat.prototype.getCurrentChannels = function(){
 
 TrickOrTreat.prototype.slackObjError = function(error){
 	this.log('error',error.msg);
-	setTimeout(function(){process.exit(1);},1000);
+	process.exit(1);
 };
 
 TrickOrTreat.prototype.error = function(error){
-	this.log('error',error);
+	this.log('error',error.stack);
 	if(this.slackObj.connected){
 		this.sendMsgToAllChannelsSYNC("An error has occured and I need to restart, please stand by!\n\n(Tell @"+this.config.superadmins.join(" & @")+" to check the logs)");	
 	}else{
@@ -343,11 +343,11 @@ TrickOrTreat.prototype.error = function(error){
 TrickOrTreat.prototype.addHumor = function(msg){
 	var edited = msg;
 	if(chance.bool({likelihood: 10})){
-		edited = edited+" "+chance.pick(treatStrings.bleepsAndBloopsEnd);	
+		edited = edited+" "+chance.pick(this.treatStrings.bleepsAndBloopsEnd);	
 	}
 
 	if(chance.bool({likelihood: 10})){
-		edited = chance.pick(treatStrings.bleepsAndBloopsStart)+" "+edited;	
+		edited = chance.pick(this.treatStrings.bleepsAndBloopsStart)+" "+edited;	
 	}
 	
 	return edited;	
