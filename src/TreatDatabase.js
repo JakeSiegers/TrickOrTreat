@@ -166,8 +166,8 @@ TreatDatabase.prototype.getCandyCountOfPlayer = function(playerId,callback){
 	this.dbc.query('SELECT playerCandyId,playercandies.candyId,playerId,amount,candyName,candyIcon FROM playercandies LEFT JOIN candies ON candies.candyId = playercandies.candyId WHERE playerId = ? ',[playerId],callback);
 };
 
-TreatDatabase.prototype.addToCooldown = function(callback,amountMore){
-	this.dbc.query('UPDATE players SET numPlayedToday=numPlayedToday-?',[amountMore],callback);
+TreatDatabase.prototype.addToCooldown = function(playerId,amountMore,callback){
+	this.dbc.query('UPDATE players SET numPlayedToday=numPlayedToday-? WHERE playerId = ?',[amountMore,playerId],callback);
 };
 
 TreatDatabase.prototype.resetCooldowns = function(callback){
