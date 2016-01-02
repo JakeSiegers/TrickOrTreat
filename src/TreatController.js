@@ -51,7 +51,10 @@ TreatController.prototype.userCanPlay = function(userObj,callback){
 	//This is where you can choose what actually happens in the game, like events or whatnot.
 	//For now we'll jusy assume you're rolling for candy, and play for candy.
 
-	if(chance.bool({likelihood: 10})){
+	//Instead of hardcoding this, preload all events, and actualy make this cool.
+	//Convert the candy giving into an "event"
+	//All outcomes of TRT will be in seperate files (except for general stuff like REGISTER )
+	if(chance.bool({likelihood: 1})){
 		var sugarRush = require('./events/sugarRush.js');
 		new sugarRush(this.trt,userObj,callback);
 	}else{
