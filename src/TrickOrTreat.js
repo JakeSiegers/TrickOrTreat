@@ -206,6 +206,13 @@ TrickOrTreat.prototype.processMessage = function(message){
 		case 'rank':
 			this.controller.showPlayerRank(msgUserObj,this.genericResponse.bind(this,msgChannel));
 			break;
+		case 'brodcast':
+			if(this.config.admins.indexOf(msgUserObj.name) == -1){ 
+				this.sendMessageToUser(msgUserObj.id,chance.pick(this.treatStrings.notAuthorizedMessages)+"\n(You sent me: '"+msgArray.join(" ")+"')");
+				return false;
+			}
+			this.sendMsgToAllChannels(msgArray[2]);
+			break;
 		default:
 			this.sendMessageToChannel(msgChannel,"Unknown command (try using !trt help)");
 			break;
