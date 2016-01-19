@@ -32,7 +32,7 @@ TreatDatabase.prototype.getPlayerById = function(playerId,callback){
 };
 
 TreatDatabase.prototype.insertPlayer = function(playerId,playerName,callback){
-	this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW()',[playerId,playerName],callback);
+	this.dbc.query('INSERT INTO players SET playerId = ? , playerName = ? , lastPlayed = NOW(), numPlayedToday = 0',[playerId,playerName],callback);
 };
 
 TreatDatabase.prototype.getPlayerCandyTopTen = function(callback){
