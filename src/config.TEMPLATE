@@ -1,9 +1,15 @@
 var config = {
 	token:''
-	,mysqlHost:''
-	,mysqlPort:3306
-	,mysqlUser:''
-	,mysqlPass:''
-	,mysqlDatabase:'trickortreat'
+	,botName:''
+	,'botImage':''
+	,superadmins:[]
+	,admins:[]
+	,mysql:{
+		host:'localhost'
+		,port:3306
+		,user:'root'
+		,password:''
+		,database:'trickortreat'
+	}	
 }
 module.exports = config;
