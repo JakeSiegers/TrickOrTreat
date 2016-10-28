@@ -1,4 +1,5 @@
 daemon/
 node_modules/
 config.js
+startBot.bat
 .idea
