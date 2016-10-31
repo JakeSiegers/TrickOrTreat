@@ -2,11 +2,11 @@
 //  hubot - You go trick or treating
 //  hubot leaders - Get the top 10 players
 
-
 module.exports = function(robot){
     var trt = require('../TrickOrTreat/TrickOrTreat');
 
     robot.hear(/^trt$/,function(msg){
+
 		/*
 		var  messageData = {
 		    channel: msg.message.room,
@@ -26,18 +26,13 @@ module.exports = function(robot){
     });
 
     robot.respond(/leaders/i,function(msg){
-        trt.leaders().then(function(rows){
-            var leaderStr = 'Top 10 Players\n'
-            for(var i in rows){
-                leaderStr += rows[i]['rank']+') '+rows[i]['playerName']+' with '+rows[i]['total']+' candies\n';
-            }
-            msg.reply(leaderStr);
+        trt.getLeaders().then(function(leaders){
+	        msg.reply(leaders);
         });
     });
 
     robot.respond(/is it (weekend|holiday)\s?\?/i, function(msg){
         var today = new Date();
-
         msg.reply(today.getDay() === 0 || today.getDay() === 6 ? "YES" : "NO");
     });
 };
